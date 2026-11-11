@@ -62,6 +62,9 @@ PROOFS = [
     ('source-item-exclusions', 'src/main/java/com/stashledger/data/GeneratedStashItemRequirements.java',
      'if (!excluded.contains(itemId))', 'if (true)',
      'com.stashledger.data.StashItemRequirementsTest', 'preservesSourceDeclaredVariationExclusionsAndPositiveGroups'),
+    ('font-safe-display', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
+     'return displayText(value).replace("&", "&amp;")', 'return value.replace("&", "&amp;")',
+     'com.stashledger.ui.StashLedgerPanelTest', 'unicodeStatusMessageIsRenderedAndTooledWithFontSafeText'),
 ]
 results = []
 

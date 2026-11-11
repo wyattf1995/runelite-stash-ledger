@@ -211,7 +211,8 @@ public class StashLedgerPluginTest
         assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
 
         plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
-        when(client.getLocalPlayer().getLocalLocation()).thenReturn(LocalPoint.fromScene(60, 50, client.getWorldView(-1)));
+        LocalPoint farAway = LocalPoint.fromScene(60, 50, client.getWorldView(-1));
+        when(client.getLocalPlayer().getLocalLocation()).thenReturn(farAway);
         plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
         assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
         verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
@@ -277,7 +278,8 @@ public class StashLedgerPluginTest
         when(client.getWorldView(-1)).thenReturn(view);
         when(client.getTickCount()).thenReturn(100);
         Player player = mock(Player.class);
-        when(player.getLocalLocation()).thenReturn(LocalPoint.fromScene(50, 50, view));
+        LocalPoint playerLocation = LocalPoint.fromScene(50, 50, view);
+        when(player.getLocalLocation()).thenReturn(playerLocation);
         when(client.getLocalPlayer()).thenReturn(player);
         ((LedgerState) get("state")).applyBuildScan(Map.of(definition.getId(), BuildStatus.BUILT));
         return definition;

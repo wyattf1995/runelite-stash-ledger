@@ -658,7 +658,7 @@ public final class StashLedgerPanel extends PluginPanel
         return panel;
     }
 
-    private static <T extends Component> T fullWidth(T component)
+    private static <T extends javax.swing.JComponent> T fullWidth(T component)
     {
         component.setAlignmentX(Component.LEFT_ALIGNMENT);
         component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getMaximumSize().height));

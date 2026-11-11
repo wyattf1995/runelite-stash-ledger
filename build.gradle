@@ -30,7 +30,6 @@ tasks.withType(JavaCompile).configureEach {
     options.release.set(11)
 }
 tasks.named('processResources') {
-    from(['LICENSE', 'THIRD_PARTY_NOTICES']) { into 'META-INF/stash-ledger' }
     from('runelite-plugin.properties')
 }
 tasks.withType(Test).configureEach {
@@ -47,6 +46,9 @@ tasks.register('run', JavaExec) {
     classpath = sourceSets.launcher.runtimeClasspath
     mainClass = 'com.stashledger.StashLedgerLauncher'
     jvmArgs '-ea'
+    if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        jvmArgs '--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED'
+    }
     args '--developer-mode', '--debug'
 }
 tasks.register('shadowJar', Jar) {

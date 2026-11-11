@@ -3,11 +3,10 @@
 `GeneratedStashDefinitions.java` is generated from the pinned RuneLite master
 snapshot `bb0fa42b3d9329ffe31115f1f20042c455def2e3`.
 
-Inputs stored outside this repository for the implementation task:
+The pinned source inputs are:
 
-- `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/STASHUnit.java`
-- `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/EmoteClue.java`
-- `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/ItemRequirement.java`
+- RuneLite `STASHUnit.java`, `EmoteClue.java`, and `ItemRequirement.java` at
+  [`bb0fa42b3d9329ffe31115f1f20042c455def2e3`](https://github.com/runelite/runelite/tree/bb0fa42b3d9329ffe31115f1f20042c455def2e3)
 - `https://github.com/larsvansoest/emote-clue-items/blob/2ab1220cbccba512c2f6744b217c266524e70be9/src/main/java/com/larsvansoest/runelite/clueitems/data/StashUnit.java`
 
 Regenerate after replacing those snapshots:

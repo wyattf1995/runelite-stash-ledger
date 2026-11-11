@@ -195,7 +195,7 @@ public final class StashLedgerPanel extends PluginPanel
         return definition.getItems().stream().anyMatch(item -> item.toLowerCase(Locale.ROOT).contains(query));
     }
 
-    private Component header()
+    private JPanel header()
     {
         JPanel panel = new JPanel(new BorderLayout(8, 0));
         panel.setOpaque(false);
@@ -228,7 +228,7 @@ public final class StashLedgerPanel extends PluginPanel
         return panel;
     }
 
-    private Component summary()
+    private JPanel summary()
     {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(SURFACE);
@@ -263,7 +263,7 @@ public final class StashLedgerPanel extends PluginPanel
         return panel;
     }
 
-    private Component controls()
+    private JPanel controls()
     {
         JPanel panel = verticalPanel();
         search.setToolTipText("Search location, clue tier, or known item");
@@ -315,7 +315,7 @@ public final class StashLedgerPanel extends PluginPanel
         return panel;
     }
 
-    private Component statusRow()
+    private JPanel statusRow()
     {
         JPanel row = verticalPanel();
         resultCount.setForeground(new Color(211, 207, 199));
@@ -541,7 +541,7 @@ public final class StashLedgerPanel extends PluginPanel
         return detail;
     }
 
-    private Component contentsControls(StashEntry entry)
+    private JPanel contentsControls(StashEntry entry)
     {
         JPanel row = new JPanel(new BorderLayout(6, 0));
         row.setOpaque(false);
@@ -565,7 +565,7 @@ public final class StashLedgerPanel extends PluginPanel
         return row;
     }
 
-    private Component actionRow(StashEntry entry)
+    private JPanel actionRow(StashEntry entry)
     {
         JPanel row = new JPanel(new GridLayout(1, 3, 5, 0));
         row.setOpaque(false);

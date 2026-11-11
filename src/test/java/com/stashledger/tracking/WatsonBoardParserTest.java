@@ -56,7 +56,8 @@ public class WatsonBoardParserTest
     @Test
     public void normalizesPresentationTagsPunctuationAndWhitespace()
     {
-        assertEquals("warriors guild bank", WatsonBoardParser.normalize(" <col=ff00ff>Warriors’_Guild - bank</col> "));
+        assertEquals("warriors guild bank", WatsonBoardParser.normalize(" <col=ff00ff>Warriors’ Guild - bank</col> "));
+        assertEquals("warriorsguild", WatsonBoardParser.normalize("Warriors’_Guild"));
     }
 
     private static Map<StashTier, List<WatsonBoardParser.Cell>> completeBoard(List<StashDefinition> definitions)

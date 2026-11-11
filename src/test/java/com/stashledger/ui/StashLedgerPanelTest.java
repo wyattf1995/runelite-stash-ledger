@@ -155,6 +155,22 @@ public class StashLedgerPanelTest
         });
     }
 
+    @Test
+    public void longDetailMaterialsAndClueRequirementsFitAtSidebarWidth() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            StashEntry longDetail = entry("LONG", "Long clue location", StashTier.MASTER,
+                BuildStatus.BUILT, ContentsStatus.FILLED, false,
+                "Any combination of a completed god book, a ring of wealth, a heraldic rune shield, and climbing boots");
+            panel.update(Arrays.asList(longDetail), "Demo account", true);
+            clickAccessible(panel, "Expand Long clue location");
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
+            assertDetailTextFits(findLabelContaining(panel, "2 mahogany planks"));
+            assertDetailTextFits(findLabelContaining(panel, "Any combination of a completed god book"));
+        });
+    }
+
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,
                                     ContentsStatus contents, boolean pinned, String... items)
     {
@@ -307,6 +323,14 @@ public class StashLedgerPanelTest
             ((java.awt.Container) component).doLayout();
             for (Component child : ((java.awt.Container) component).getComponents()) layoutTree(child);
         }
+    }
+
+    private static void assertDetailTextFits(JLabel label)
+    {
+        assertTrue("Wrapped detail text must fit its allocated sidebar width",
+            label.getPreferredSize().width <= label.getWidth());
+        assertTrue("Detail text must use the deliberate compact text width",
+            label.getPreferredSize().width <= 168);
     }
 
     private static final class RecordingActions implements StashLedgerPanel.Actions

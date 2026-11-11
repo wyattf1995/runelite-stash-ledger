@@ -30,6 +30,10 @@ PROOFS = [
     ('built-contents-guard', 'src/main/java/com/stashledger/state/LedgerState.java',
      'status == null || builds.get(id) != BuildStatus.BUILT', 'status == null',
      'com.stashledger.state.LedgerStateTest', 'onlyBuiltUnitsAcceptContentsConfirmation'),
+    ('detail-width', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
+     'return new JLabel("<html><div style=\'width:168px\'>" + escapeHtml(text) + "</div></html>");',
+     'return new JLabel(text);',
+     'com.stashledger.ui.StashLedgerPanelTest', 'longDetailMaterialsAndClueRequirementsFitAtSidebarWidth'),
 ]
 results = []
 

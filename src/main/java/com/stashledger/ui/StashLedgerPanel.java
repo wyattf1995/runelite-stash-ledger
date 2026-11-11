@@ -45,6 +45,8 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -674,6 +676,35 @@ public final class StashLedgerPanel extends PluginPanel
         button.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return button;
+    }
+
+    /** Keeps the search wiring explicit without invoking UI work off the EDT. */
+    private static final class SimpleDocumentListener implements DocumentListener
+    {
+        private final Runnable onChange;
+
+        private SimpleDocumentListener(Runnable onChange)
+        {
+            this.onChange = onChange;
+        }
+
+        @Override
+        public void insertUpdate(DocumentEvent event)
+        {
+            onChange.run();
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent event)
+        {
+            onChange.run();
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent event)
+        {
+            onChange.run();
+        }
     }
 
     private final class ProgressLine extends JPanel

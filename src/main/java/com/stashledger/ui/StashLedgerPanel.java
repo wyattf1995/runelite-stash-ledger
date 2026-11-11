@@ -91,7 +91,6 @@ public final class StashLedgerPanel extends PluginPanel
     private boolean loggedIn;
     private String accountName = "";
     private String statusMessage = "";
-    private int previousScrollValue;
     private boolean rebuilding;
 
     public StashLedgerPanel(Actions actions)
@@ -138,7 +137,6 @@ public final class StashLedgerPanel extends PluginPanel
             SwingUtilities.invokeLater(() -> update(snapshot, newAccountName, newLoggedIn));
             return;
         }
-        previousScrollValue = scrollPane.getVerticalScrollBar().getValue();
         entries.clear();
         if (snapshot != null)
         {
@@ -307,16 +305,17 @@ public final class StashLedgerPanel extends PluginPanel
 
     private Component statusRow()
     {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
+        JPanel row = verticalPanel();
         resultCount.setForeground(new Color(211, 207, 199));
         resultCount.setFont(resultCount.getFont().deriveFont(11f));
         statusLabel.setForeground(MUTED);
         statusLabel.setFont(statusLabel.getFont().deriveFont(11f));
-        statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        row.add(resultCount, BorderLayout.WEST);
-        row.add(statusLabel, BorderLayout.CENTER);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 18));
+        resultCount.setAlignmentX(Component.LEFT_ALIGNMENT);
+        statusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.add(resultCount);
+        row.add(Box.createVerticalStrut(2));
+        row.add(statusLabel);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
         return row;
     }
 
@@ -338,6 +337,7 @@ public final class StashLedgerPanel extends PluginPanel
             return;
         }
         rebuilding = true;
+        final int scrollValue = scrollPane.getVerticalScrollBar().getValue();
         try
         {
             updateSummary();
@@ -363,7 +363,7 @@ public final class StashLedgerPanel extends PluginPanel
             updateStatusText();
             cards.revalidate();
             cards.repaint();
-            SwingUtilities.invokeLater(() -> scrollPane.getVerticalScrollBar().setValue(previousScrollValue));
+            SwingUtilities.invokeLater(() -> scrollPane.getVerticalScrollBar().setValue(scrollValue));
         }
         finally
         {
@@ -386,18 +386,26 @@ public final class StashLedgerPanel extends PluginPanel
 
     private void updateStatusText()
     {
+        String visibleStatus;
         if (!statusMessage.isEmpty())
         {
-            statusLabel.setText(statusMessage);
+            visibleStatus = statusMessage;
         }
         else if (!loggedIn)
         {
-            statusLabel.setText("Account state unavailable");
+            visibleStatus = "Account state unavailable";
         }
         else
         {
-            statusLabel.setText(accountName.isEmpty() ? "Construction scan" : accountName);
+            visibleStatus = accountName.isEmpty() ? "Construction scan" : accountName;
         }
+        statusLabel.setText("<html><div style='width:190px'>" + escapeHtml(visibleStatus) + "</div></html>");
+        statusLabel.setToolTipText(visibleStatus);
+    }
+
+    private static String escapeHtml(String value)
+    {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private Component emptyState(String heading, String message)
@@ -438,7 +446,6 @@ public final class StashLedgerPanel extends PluginPanel
         header.setToolTipText((expanded ? "Collapse " : "Expand ") + definition.getName());
         header.getAccessibleContext().setAccessibleName((expanded ? "Collapse " : "Expand ") + definition.getName());
         header.addActionListener(event -> {
-            previousScrollValue = scrollPane.getVerticalScrollBar().getValue();
             if (!expandedIds.add(definition.getId()))
             {
                 expandedIds.remove(definition.getId());

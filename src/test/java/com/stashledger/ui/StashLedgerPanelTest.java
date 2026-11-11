@@ -16,8 +16,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -86,9 +88,13 @@ public class StashLedgerPanelTest
             clickAccessible(panel, "Expand Barrows chest");
             click(panel, "Map");
             click(panel, "☆ My list");
+            List<JComboBox> boxes = findAll(panel, JComboBox.class);
+            boxes.get(boxes.size() - 1).setSelectedIndex(1);
         });
         assertEquals("BARROWS", actions.mapId);
         assertEquals("BARROWS", actions.pinId);
+        assertEquals("BARROWS", actions.contentsId);
+        assertEquals(ContentsStatus.EMPTY, actions.contentsStatus);
     }
 
     @Test
@@ -191,12 +197,30 @@ public class StashLedgerPanelTest
         throw new AssertionError("Missing component " + type.getSimpleName());
     }
 
+    private static <T extends Component> List<T> findAll(Component component, Class<T> type)
+    {
+        List<T> found = new ArrayList<>();
+        collect(component, type, found);
+        return found;
+    }
+
+    private static <T extends Component> void collect(Component component, Class<T> type, List<T> found)
+    {
+        if (type.isInstance(component)) found.add(type.cast(component));
+        if (component instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) component).getComponents()) collect(child, type, found);
+        }
+    }
+
     private static final class RecordingActions implements StashLedgerPanel.Actions
     {
         private String pinId;
         private String mapId;
+        private String contentsId;
+        private ContentsStatus contentsStatus;
         @Override public void togglePinned(String id) { pinId = id; }
-        @Override public void markContents(String id, ContentsStatus status) { }
+        @Override public void markContents(String id, ContentsStatus status) { contentsId = id; contentsStatus = status; }
         @Override public void showOnMap(StashDefinition definition) { mapId = definition.getId(); }
         @Override public void openWiki(StashDefinition definition) { }
         @Override public void refresh() { }

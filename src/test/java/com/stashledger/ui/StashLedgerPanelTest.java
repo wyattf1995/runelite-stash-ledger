@@ -244,6 +244,18 @@ public class StashLedgerPanelTest
     }
 
     @Test
+    public void unicodeStatusMessageIsRenderedAndTooledWithFontSafeText() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.setStatusMessage("Watson sync\u2026 contents are ready");
+            JLabel status = findLabelContaining(panel, "Watson sync...");
+            assertTrue(status.getText().contains("Watson sync..."));
+            assertEquals("Watson sync... contents are ready", status.getToolTipText());
+            assertEquals(-1, status.getFont().canDisplayUpTo(status.getText()));
+        });
+    }
+
+    @Test
     public void contentsChoiceAndLongLocationTitleFitAtSidebarWidth() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {

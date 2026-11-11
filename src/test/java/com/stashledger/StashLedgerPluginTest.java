@@ -229,6 +229,16 @@ public class StashLedgerPluginTest
             .acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 100).isPresent());
     }
 
+    @Test public void overviewCannotExposeStateToAnotherActiveProfile() throws Exception
+    {
+        installInteractionScene();
+        WorldMapPointManager manager = (WorldMapPointManager) get("mapPoints");
+        set("overviewMarkers", new StashMapMarkers(manager));
+        when(config.getRSProfileKey()).thenReturn("account-b");
+        call("publish");
+        verifyNoInteractions(manager);
+    }
+
     private StashDefinition installInteractionScene() throws Exception
     {
         StashDefinition definition = ((StashCatalog) get("catalog")).getDefinitions().get(0);

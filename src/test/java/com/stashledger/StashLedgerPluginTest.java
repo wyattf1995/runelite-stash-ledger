@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.swing.SwingUtilities;
 import net.runelite.api.Client;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
@@ -36,6 +38,9 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import org.junit.Before;
@@ -306,8 +311,96 @@ public class StashLedgerPluginTest
         assertEquals(new WorldPoint(3222, 9584, 0), points.getAllValues().get(0).getWorldPoint());
         assertEquals(new WorldPoint(3167, 9570, 0), points.getAllValues().get(1).getWorldPoint());
         plugin.shutDown();
+        queued.remove(0).run();
         for (WorldMapPoint point : points.getAllValues()) { verify(manager).remove(same(point)); }
         assertTrue(((List<?>) get("selectedMarkers")).isEmpty());
+    }
+
+    @Test public void shutdownDuringRefreshCannotLeaveOverviewMarkersBehind() throws Exception
+    {
+        WorldMapPointManager manager = (WorldMapPointManager) get("mapPoints");
+        Set<WorldMapPoint> visible = new HashSet<>();
+        AtomicBoolean stopped = new AtomicBoolean();
+        doAnswer(invocation ->
+        {
+            visible.add(invocation.getArgument(0));
+            if (stopped.compareAndSet(false, true))
+            {
+                SwingUtilities.invokeAndWait(plugin::shutDown);
+            }
+            return null;
+        }).when(manager).add(any(WorldMapPoint.class));
+        doAnswer(invocation -> { visible.remove(invocation.getArgument(0)); return null; })
+            .when(manager).remove(any(WorldMapPoint.class));
+        set("overviewMarkers", new StashMapMarkers(manager));
+        call("publish");
+        drainClientCallbacks();
+        assertTrue(stopped.get());
+        assertTrue("all markers from the in-flight refresh must be retired", visible.isEmpty());
+        assertEquals(false, get("running"));
+    }
+
+    @Test public void rapidRestartDoesNotClearTheNewSessionsOverlay() throws Exception
+    {
+        Set<Overlay> visible = installLifecycleDependencies();
+        SwingUtilities.invokeAndWait(plugin::startUp);
+        drainClientCallbacks();
+        SwingUtilities.invokeAndWait(() -> { });
+        drainClientCallbacks();
+        assertEquals(1, visible.size());
+        Overlay oldOverlay = visible.iterator().next();
+
+        SwingUtilities.invokeAndWait(() -> { plugin.shutDown(); plugin.startUp(); });
+        drainClientCallbacks();
+        SwingUtilities.invokeAndWait(() -> { });
+        drainClientCallbacks();
+        assertEquals(true, get("running"));
+        assertEquals(1, visible.size());
+        assertFalse(visible.contains(oldOverlay));
+        assertTrue(visible.contains(get("itemOverlay")));
+        SwingUtilities.invokeAndWait(plugin::shutDown);
+        drainClientCallbacks();
+        assertTrue(visible.isEmpty());
+    }
+
+    @Test public void stopDuringInitializationCannotReactivateThePlugin() throws Exception
+    {
+        Set<Overlay> visible = installLifecycleDependencies();
+        OverlayManager manager = (OverlayManager) get("overlayManager");
+        doAnswer(invocation ->
+        {
+            visible.add(invocation.getArgument(0));
+            SwingUtilities.invokeAndWait(plugin::shutDown);
+            return true;
+        }).when(manager).add(any(Overlay.class));
+        SwingUtilities.invokeAndWait(plugin::startUp);
+        queued.remove(0).run();
+        assertEquals(false, get("running"));
+        drainClientCallbacks();
+        SwingUtilities.invokeAndWait(() -> { });
+        assertTrue(visible.isEmpty());
+        verifyNoInteractions((ClientToolbar) get("clientToolbar"));
+    }
+
+    private Set<Overlay> installLifecycleDependencies() throws Exception
+    {
+        Set<Overlay> visible = new HashSet<>();
+        OverlayManager manager = mock(OverlayManager.class);
+        doAnswer(invocation -> { visible.add(invocation.getArgument(0)); return true; })
+            .when(manager).add(any(Overlay.class));
+        doAnswer(invocation -> { visible.remove(invocation.getArgument(0)); return true; })
+            .when(manager).remove(any(Overlay.class));
+        ItemManager items = mock(ItemManager.class);
+        when(items.canonicalize(anyInt())).thenAnswer(invocation -> invocation.getArgument(0));
+        set("itemManager", items);
+        set("overlayManager", manager);
+        set("clientToolbar", mock(ClientToolbar.class));
+        return visible;
+    }
+
+    private void drainClientCallbacks()
+    {
+        while (!queued.isEmpty()) { queued.remove(0).run(); }
     }
 
     private StashDefinition installInteractionScene() throws Exception

@@ -73,6 +73,39 @@ public class StashLedgerPanelTest
     }
 
     @Test
+    public void filledAndEmptyFiltersOnlyMatchBuiltUnitsWithThatContentsState() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> click(panel, "Filled"));
+        assertEquals(1, panel.visibleEntries().size());
+        assertEquals("BARROWS", panel.visibleEntries().get(0).getDefinition().getId());
+
+        SwingUtilities.invokeAndWait(() -> click(panel, "Empty"));
+        assertEquals(1, panel.visibleEntries().size());
+        assertEquals("CANIFIS", panel.visibleEntries().get(0).getDefinition().getId());
+        assertTrue(panel.visibleEntries().stream().allMatch(entry -> entry.getBuildStatus() == BuildStatus.BUILT));
+    }
+
+    @Test
+    public void hideFilledComposesWithShortlistBuildTierAndSearchFilters() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            click(panel, "Hide filled");
+            click(panel, "My list");
+        });
+        assertTrue("The sole shortlisted entry is filled and should be hidden", panel.visibleEntries().isEmpty());
+
+        SwingUtilities.invokeAndWait(() -> {
+            click(panel, "My list");
+            click(panel, "Built");
+            find(panel, JComboBox.class).setSelectedIndex(4); // Hard
+            find(panel, JTextField.class).setText("Fishing");
+        });
+        assertEquals(1, panel.visibleEntries().size());
+        assertEquals("FISHING", panel.visibleEntries().get(0).getDefinition().getId());
+        assertEquals(ContentsStatus.UNKNOWN, panel.visibleEntries().get(0).getContentsStatus());
+    }
+
+    @Test
     public void searchIncludesKnownItemAndStateIsPreservedAcrossUpdate() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
@@ -119,6 +152,7 @@ public class StashLedgerPanelTest
                 scrollPane.getViewport().getView().getWidth());
             assertInsideViewport(panel, scrollPane, find(panel, JTextField.class));
             assertInsideViewport(panel, scrollPane, findAll(panel, JComboBox.class).get(0));
+            assertInsideViewport(panel, scrollPane, findButton(panel, "Hide filled"));
             assertInsideViewport(panel, scrollPane, barrows);
             assertInsideViewport(panel, scrollPane, findButton(panel, "★ Listed"));
             BufferedImage image = new BufferedImage(225, 680, BufferedImage.TYPE_INT_ARGB);

@@ -7,6 +7,8 @@ import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashTier;
 import com.stashledger.ui.StashLedgerPanel;
 import com.stashledger.state.LedgerState;
+import com.stashledger.map.StashMapMarkers;
+import com.stashledger.tracking.StashInteractionTracker;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
@@ -16,8 +18,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.runelite.api.Client;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
+import net.runelite.api.MenuAction;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.Player;
+import net.runelite.api.Scene;
+import net.runelite.api.WorldView;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -46,6 +57,7 @@ public class StashLedgerPluginTest
         when(config.getRSProfileKey()).thenReturn("account-a");
         StashCatalog catalog = new StashCatalog();
         set("client", client); set("clientThread", thread); set("configManager", config);
+        set("config", new StashLedgerConfig() {});
         set("mapPoints", mock(WorldMapPointManager.class));
         set("catalog", catalog); set("state", new LedgerState(catalog.getDefinitions()));
         set("profile", "account-a"); set("running", true); set("lifecycle", 1L);
@@ -150,6 +162,108 @@ public class StashLedgerPluginTest
         queued.remove(0).run();
         verifyNoInteractions((WorldMapPointManager) get("mapPoints"));
         assertNull(get("marker"));
+    }
+
+    @Test public void confirmedSearchUpdatesOnlyItsStashAndActiveProfile() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        LedgerState state = (LedgerState) get("state");
+        assertEquals(ContentsStatus.FILLED, state.snapshot().get(0).getContentsStatus());
+        assertTrue(state.snapshot().subList(1, state.snapshot().size()).stream()
+            .allMatch(entry -> entry.getContentsStatus() == ContentsStatus.UNKNOWN));
+        verify(config).setConfiguration(eq("stashledger"), eq("account-a"), eq("accountState"), anyString());
+    }
+
+    @Test public void exactChatWithoutMatchingObjectAndLocationCannotChangeContents() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        plugin.onMenuOptionClicked(search(definition, 51, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.NPC_FIRST_OPTION));
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test public void nextMenuActionCancelsPendingContentsConfirmation() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.WALK));
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
+    }
+
+    @Test public void contentsConfirmationCannotCrossAccountOrProximityBoundary() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        when(config.getRSProfileKey()).thenReturn("account-b");
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        when(config.getRSProfileKey()).thenReturn("account-a");
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
+
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        when(client.getLocalPlayer().getLocalLocation()).thenReturn(LocalPoint.fromScene(60, 50, client.getWorldView(-1)));
+        plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+        assertEquals(ContentsStatus.UNKNOWN, ((LedgerState) get("state")).snapshot().get(0).getContentsStatus());
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test public void logoutClearsOverviewMarkersAndPendingConfirmation() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        StashMapMarkers markers = new StashMapMarkers((WorldMapPointManager) get("mapPoints"));
+        set("overviewMarkers", markers);
+        call("publish");
+        verify((WorldMapPointManager) get("mapPoints"), times(119)).add(any());
+        plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+        GameStateChanged logout = new GameStateChanged(); logout.setGameState(GameState.LOGIN_SCREEN);
+        plugin.onGameStateChanged(logout);
+        verify((WorldMapPointManager) get("mapPoints"), times(119)).remove(any());
+        assertFalse(((StashInteractionTracker) get("interactions"))
+            .acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 100).isPresent());
+    }
+
+    private StashDefinition installInteractionScene() throws Exception
+    {
+        StashDefinition definition = ((StashCatalog) get("catalog")).getDefinitions().get(0);
+        Scene scene = mock(Scene.class);
+        when(scene.getBaseX()).thenReturn(definition.getX() - 50);
+        when(scene.getBaseY()).thenReturn(definition.getY() - 50);
+        WorldView view = mock(WorldView.class);
+        when(view.getId()).thenReturn(-1);
+        when(view.getPlane()).thenReturn(definition.getPlane());
+        when(view.getScene()).thenReturn(scene);
+        when(client.getWorldView(-1)).thenReturn(view);
+        when(client.getTickCount()).thenReturn(100);
+        Player player = mock(Player.class);
+        when(player.getLocalLocation()).thenReturn(LocalPoint.fromScene(50, 50, view));
+        when(client.getLocalPlayer()).thenReturn(player);
+        ((LedgerState) get("state")).applyBuildScan(Map.of(definition.getId(), BuildStatus.BUILT));
+        return definition;
+    }
+
+    private MenuOptionClicked search(StashDefinition definition, int sceneX, MenuAction action)
+    {
+        MenuEntry entry = mock(MenuEntry.class);
+        when(entry.getOption()).thenReturn("Search"); when(entry.getType()).thenReturn(action);
+        when(entry.getIdentifier()).thenReturn(definition.getObjectId());
+        when(entry.getWorldViewId()).thenReturn(-1);
+        when(entry.getParam0()).thenReturn(sceneX); when(entry.getParam1()).thenReturn(50);
+        return new MenuOptionClicked(entry);
+    }
+
+    private ChatMessage chat(String message)
+    {
+        ChatMessage event = mock(ChatMessage.class);
+        when(event.getType()).thenReturn(ChatMessageType.GAMEMESSAGE);
+        when(event.getMessage()).thenReturn(message);
+        return event;
     }
 
     private void installEmptyBoard(StashCatalog catalog)

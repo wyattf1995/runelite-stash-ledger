@@ -12,6 +12,7 @@ import com.stashledger.model.StashTier;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import net.runelite.client.ui.laf.RuneLiteLAF;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,6 +40,7 @@ public class StashLedgerPanelTest
     public void setUp() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
+            RuneLiteLAF.setup();
             actions = new RecordingActions();
             panel = new StashLedgerPanel(actions);
             entries = Arrays.asList(
@@ -89,7 +92,7 @@ public class StashLedgerPanelTest
         SwingUtilities.invokeAndWait(() -> {
             clickAccessible(panel, "Expand Barrows chest");
             click(panel, "Map");
-            click(panel, "☆ My list");
+            click(panel, "★ Listed");
             List<JComboBox> boxes = findAll(panel, JComboBox.class);
             boxes.get(boxes.size() - 1).setSelectedIndex(1);
         });
@@ -112,6 +115,12 @@ public class StashLedgerPanelTest
             JLabel barrows = findLabel(panel, "Barrows chest");
             assertTrue("Expanded card title should have positive rendered width", barrows.getWidth() > 0);
             assertTrue("Expanded card title should be inside the narrow sidebar", barrows.getY() >= 0);
+            assertEquals("Sidebar content must track the viewport width", scrollPane.getViewport().getWidth(),
+                scrollPane.getViewport().getView().getWidth());
+            assertInsideViewport(panel, scrollPane, find(panel, JTextField.class));
+            assertInsideViewport(panel, scrollPane, findAll(panel, JComboBox.class).get(0));
+            assertInsideViewport(panel, scrollPane, barrows);
+            assertInsideViewport(panel, scrollPane, findButton(panel, "★ Listed"));
             BufferedImage image = new BufferedImage(225, 680, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics = image.createGraphics();
             panel.paint(graphics);
@@ -135,8 +144,10 @@ public class StashLedgerPanelTest
     {
         SwingUtilities.invokeAndWait(() -> {
             panel.setStatusMessage("Watson noticeboard sync found 6 built units whose contents have not been checked yet.");
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
             JLabel status = findLabelContaining(panel, "Watson noticeboard sync");
-            assertTrue(status.getText().contains("width:190px"));
+            assertDetailTextFits(status);
             assertTrue(status.getToolTipText().startsWith("Watson noticeboard sync"));
         });
     }
@@ -331,6 +342,15 @@ public class StashLedgerPanelTest
             label.getPreferredSize().width <= label.getWidth());
         assertTrue("Detail text must use the deliberate compact text width",
             label.getPreferredSize().width <= 168);
+    }
+
+    private static void assertInsideViewport(JComponent root, JScrollPane scrollPane, Component component)
+    {
+        assertTrue("Expected component", component != null);
+        Rectangle bounds = SwingUtilities.convertRectangle(component.getParent(), component.getBounds(), root);
+        int viewportRight = scrollPane.getX() + scrollPane.getViewport().getX() + scrollPane.getViewport().getWidth();
+        assertTrue("Component should start inside the sidebar viewport", bounds.x >= scrollPane.getX());
+        assertTrue("Component should finish inside the sidebar viewport", bounds.x + bounds.width <= viewportRight);
     }
 
     private static final class RecordingActions implements StashLedgerPanel.Actions

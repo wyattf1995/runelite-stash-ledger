@@ -289,9 +289,9 @@ public class StashLedgerPlugin extends Plugin
         for (StashTier tier : StashTier.values())
         {
             Widget root = client.getWidget(WATSON_GROUP, 4 + tier.ordinal() * 2);
-            if (root == null || root.getDynamicChildren() == null) { return false; }
+            if (root == null || root.getChildren() == null) { return false; }
             List<WatsonBoardParser.Cell> tierCells = new ArrayList<>();
-            for (Widget child : root.getDynamicChildren())
+            for (Widget child : root.getChildren())
             {
                 if (child != null) { tierCells.add(new WatsonBoardParser.Cell(child.getType(), child.getText())); }
             }

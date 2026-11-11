@@ -28,6 +28,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Scene;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.MenuOptionClicked;
@@ -36,8 +37,10 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
+import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -164,7 +167,7 @@ public class StashLedgerPluginTest
         set("accountEpoch", 4L);
         queued.remove(0).run();
         verifyNoInteractions((WorldMapPointManager) get("mapPoints"));
-        assertNull(get("marker"));
+        assertTrue(((List<?>) get("selectedMarkers")).isEmpty());
     }
 
     @Test public void confirmedSearchUpdatesOnlyItsStashAndActiveProfile() throws Exception
@@ -224,11 +227,11 @@ public class StashLedgerPluginTest
         StashMapMarkers markers = new StashMapMarkers((WorldMapPointManager) get("mapPoints"));
         set("overviewMarkers", markers);
         call("publish");
-        verify((WorldMapPointManager) get("mapPoints"), times(119)).add(any());
+        verify((WorldMapPointManager) get("mapPoints"), times(121)).add(any());
         plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
         GameStateChanged logout = new GameStateChanged(); logout.setGameState(GameState.LOGIN_SCREEN);
         plugin.onGameStateChanged(logout);
-        verify((WorldMapPointManager) get("mapPoints"), times(119)).remove(any());
+        verify((WorldMapPointManager) get("mapPoints"), times(121)).remove(any());
         assertFalse(((StashInteractionTracker) get("interactions"))
             .acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 100).isPresent());
     }
@@ -265,15 +268,62 @@ public class StashLedgerPluginTest
         assertFalse(items.isNeeded(20));
     }
 
+    @Test public void alternateLocationsConfirmTheSameLogicalStash() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        Map<String, WorldPoint> alternatives = Map.of(
+            "LUMBRIDGE_SWAMP_CAVES", new WorldPoint(3167, 9570, 0),
+            "ENTRANCE_OF_THE_CAVERN_UNDER_THE_WHIRLPOOL", new WorldPoint(1636, 5367, 1));
+        for (Map.Entry<String, WorldPoint> alternative : alternatives.entrySet())
+        {
+            StashDefinition definition = catalog.getById(alternative.getKey());
+            installInteractionScene(definition, alternative.getValue());
+            plugin.onMenuOptionClicked(search(definition, 50, MenuAction.GAME_OBJECT_FIRST_OPTION));
+            plugin.onChatMessage(chat(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE));
+            LedgerState state = (LedgerState) get("state");
+            assertEquals(ContentsStatus.FILLED, state.snapshot().stream()
+                .filter(entry -> entry.getDefinition().getId().equals(definition.getId()))
+                .findFirst().get().getContentsStatus());
+            assertEquals(119, state.snapshot().size());
+            assertEquals(1, state.snapshot().stream().filter(entry -> entry.getContentsStatus() == ContentsStatus.FILLED).count());
+            verify(config).setConfiguration(eq("stashledger"), eq("account-a"), eq("accountState"), contains(definition.getId()));
+            clearInvocations(config);
+        }
+    }
+
+    @Test public void selectedMapActionOwnsAndClearsEveryLocation() throws Exception
+    {
+        Class<?> type = Class.forName("com.stashledger.StashLedgerPlugin$PanelActions");
+        Constructor<?> constructor = type.getDeclaredConstructor(StashLedgerPlugin.class);
+        constructor.setAccessible(true);
+        StashLedgerPanel.Actions actions = (StashLedgerPanel.Actions) constructor.newInstance(plugin);
+        StashDefinition definition = ((StashCatalog) get("catalog")).getById("LUMBRIDGE_SWAMP_CAVES");
+        actions.showOnMap(definition);
+        queued.remove(0).run();
+        WorldMapPointManager manager = (WorldMapPointManager) get("mapPoints");
+        ArgumentCaptor<WorldMapPoint> points = ArgumentCaptor.forClass(WorldMapPoint.class);
+        verify(manager, times(2)).add(points.capture());
+        assertEquals(new WorldPoint(3222, 9584, 0), points.getAllValues().get(0).getWorldPoint());
+        assertEquals(new WorldPoint(3167, 9570, 0), points.getAllValues().get(1).getWorldPoint());
+        plugin.shutDown();
+        for (WorldMapPoint point : points.getAllValues()) { verify(manager).remove(same(point)); }
+        assertTrue(((List<?>) get("selectedMarkers")).isEmpty());
+    }
+
     private StashDefinition installInteractionScene() throws Exception
     {
         StashDefinition definition = ((StashCatalog) get("catalog")).getDefinitions().get(0);
+        return installInteractionScene(definition, new WorldPoint(definition.getX(), definition.getY(), definition.getPlane()));
+    }
+
+    private StashDefinition installInteractionScene(StashDefinition definition, WorldPoint location) throws Exception
+    {
         Scene scene = mock(Scene.class);
-        when(scene.getBaseX()).thenReturn(definition.getX() - 50);
-        when(scene.getBaseY()).thenReturn(definition.getY() - 50);
+        when(scene.getBaseX()).thenReturn(location.getX() - 50);
+        when(scene.getBaseY()).thenReturn(location.getY() - 50);
         WorldView view = mock(WorldView.class);
         when(view.getId()).thenReturn(-1);
-        when(view.getPlane()).thenReturn(definition.getPlane());
+        when(view.getPlane()).thenReturn(location.getPlane());
         when(view.getScene()).thenReturn(scene);
         when(client.getWorldView(-1)).thenReturn(view);
         when(client.getTickCount()).thenReturn(100);

@@ -8,7 +8,9 @@ import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashTier;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import net.runelite.api.coords.WorldPoint;
 import org.junit.Test;
 
 public class StashInteractionTrackerTest
@@ -99,6 +101,23 @@ public class StashInteractionTrackerTest
         tracker.clear();
 
         assertFalse(tracker.acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 40).isPresent());
+    }
+
+    @Test
+    public void matchesAlternateCoordinatesWithoutAcceptingWrongPlaneOrObject()
+    {
+        StashDefinition definition = new StashDefinition("one", 100, "one", StashTier.MEDIUM,
+            List.of(new WorldPoint(3222, 9584, 0), new WorldPoint(3167, 9570, 0)), List.of());
+        StashInteractionTracker tracker = new StashInteractionTracker(2);
+        tracker.recordInteraction(definition, 100, 3167, 9570, 0, StashInteractionTracker.Action.SEARCH, 40);
+        StashInteractionTracker.Update update = tracker
+            .acceptSuccessMessage(StashInteractionTracker.WITHDRAW_SUCCESS_MESSAGE, 41).get();
+        assertEquals("one", update.getStashId());
+        assertEquals(ContentsStatus.EMPTY, update.getContentsStatus());
+        tracker.recordInteraction(definition, 100, 3167, 9570, 1, StashInteractionTracker.Action.SEARCH, 42);
+        assertFalse(tracker.acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 42).isPresent());
+        tracker.recordInteraction(definition, 101, 3167, 9570, 0, StashInteractionTracker.Action.SEARCH, 42);
+        assertFalse(tracker.acceptSuccessMessage(StashInteractionTracker.DEPOSIT_SUCCESS_MESSAGE, 42).isPresent());
     }
 
     private static StashDefinition definition(String id, int objectId, int x, int y, int plane)

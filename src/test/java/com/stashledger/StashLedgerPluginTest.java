@@ -2,15 +2,23 @@ package com.stashledger;
 
 import com.stashledger.data.StashCatalog;
 import com.stashledger.model.BuildStatus;
+import com.stashledger.model.ContentsStatus;
+import com.stashledger.model.StashDefinition;
+import com.stashledger.model.StashTier;
+import com.stashledger.ui.StashLedgerPanel;
 import com.stashledger.state.LedgerState;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
@@ -108,6 +116,66 @@ public class StashLedgerPluginTest
         verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
     }
 
+    @Test public void incompleteConstructionCannotReportContentsSyncedOrReviveStaleContents() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        LedgerState state = (LedgerState) get("state");
+        Map<String, BuildStatus> builds = new HashMap<>();
+        catalog.getDefinitions().forEach(d -> builds.put(d.getId(), BuildStatus.BUILT));
+        state.applyBuildScan(builds);
+        String id = catalog.getDefinitions().get(0).getId();
+        state.markContents(id, ContentsStatus.FILLED);
+        builds.put(id, BuildStatus.UNKNOWN);
+        state.applyBuildScan(builds);
+        installEmptyBoard(catalog);
+        set("constructionReady", false);
+        assertEquals(false, call("syncWatsonBoard"));
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+        assertFalse(String.valueOf(get("message")).startsWith("Contents synced"));
+        builds.put(id, BuildStatus.BUILT);
+        state.applyBuildScan(builds);
+        set("constructionReady", true);
+        assertEquals(true, call("syncWatsonBoard"));
+        assertEquals(ContentsStatus.EMPTY, state.snapshot().get(0).getContentsStatus());
+    }
+
+    @Test public void staleMapCallbackCannotCrossAccountEpoch() throws Exception
+    {
+        Class<?> type = Class.forName("com.stashledger.StashLedgerPlugin$PanelActions");
+        Constructor<?> constructor = type.getDeclaredConstructor(StashLedgerPlugin.class);
+        constructor.setAccessible(true);
+        StashLedgerPanel.Actions actions = (StashLedgerPanel.Actions) constructor.newInstance(plugin);
+        actions.showOnMap(new StashCatalog().getDefinitions().get(0));
+        set("accountEpoch", 4L);
+        queued.remove(0).run();
+        verifyNoInteractions((WorldMapPointManager) get("mapPoints"));
+        assertNull(get("marker"));
+    }
+
+    private void installEmptyBoard(StashCatalog catalog)
+    {
+        for (StashTier tier : StashTier.values())
+        {
+            List<Widget> children = new ArrayList<>();
+            Widget decorative = mock(Widget.class);
+            when(decorative.getType()).thenReturn(3);
+            children.add(decorative);
+            for (String name : catalog.getWatsonAliases(tier).keySet())
+            {
+                Widget label = mock(Widget.class);
+                when(label.getType()).thenReturn(4);
+                when(label.getText()).thenReturn(name);
+                children.add(label);
+                Widget builtTick = mock(Widget.class);
+                when(builtTick.getType()).thenReturn(5);
+                children.add(builtTick);
+            }
+            Widget root = mock(Widget.class);
+            when(root.getChildren()).thenReturn(children.toArray(new Widget[0]));
+            when(client.getWidget(493, 4 + tier.ordinal() * 2)).thenReturn(root);
+        }
+    }
+
     private void verifyNoInteractionsExceptProfileReads()
     {
         verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
@@ -117,10 +185,10 @@ public class StashLedgerPluginTest
         Method method = StashLedgerPlugin.class.getDeclaredMethod("accountAction", Runnable.class);
         method.setAccessible(true); method.invoke(plugin, value);
     }
-    private void call(String name) throws Exception
+    private Object call(String name) throws Exception
     {
         Method method = StashLedgerPlugin.class.getDeclaredMethod(name);
-        method.setAccessible(true); method.invoke(plugin);
+        method.setAccessible(true); return method.invoke(plugin);
     }
     private void set(String name, Object value) throws Exception
     {

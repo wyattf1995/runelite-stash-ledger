@@ -77,8 +77,8 @@ public final class StashInteractionTracker
                                   Action action, long tick)
     {
         Objects.requireNonNull(definition, "definition");
-        if (definition.getObjectId() != objectId || definition.getX() != x
-            || definition.getY() != y || definition.getPlane() != plane)
+        if (definition.getObjectId() != objectId || definition.getWorldPoints().stream().noneMatch(
+            point -> point.getX() == x && point.getY() == y && point.getPlane() == plane))
         {
             clear();
             return;

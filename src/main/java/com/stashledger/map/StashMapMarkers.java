@@ -45,14 +45,16 @@ public final class StashMapMarkers
         {
             StashDefinition definition = entry.getDefinition();
             if (!next.containsKey(definition.getId())) { continue; }
-            WorldMapPoint point = new WorldMapPoint(
-                new WorldPoint(definition.getX(), definition.getY(), definition.getPlane()), icon(entry));
-            point.setName("STASH: " + definition.getName());
-            point.setTooltip(definition.getTier().getLabel() + " STASH: " + definition.getName()
-                + " | " + next.get(definition.getId()));
-            point.setJumpOnClick(true);
-            points.add(point);
-            manager.add(point);
+            for (WorldPoint location : definition.getWorldPoints())
+            {
+                WorldMapPoint point = new WorldMapPoint(location, icon(entry));
+                point.setName("STASH: " + definition.getName());
+                point.setTooltip(definition.getTier().getLabel() + " STASH: " + definition.getName()
+                    + " | " + next.get(definition.getId()));
+                point.setJumpOnClick(true);
+                points.add(point);
+                manager.add(point);
+            }
         }
         visibleStates = next;
     }

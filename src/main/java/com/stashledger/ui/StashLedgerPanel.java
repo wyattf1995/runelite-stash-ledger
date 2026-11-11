@@ -6,17 +6,23 @@ import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
 import java.awt.BorderLayout;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Polygon;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +41,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -71,18 +78,20 @@ public final class StashLedgerPanel extends PluginPanel
     private static final Color GREEN_SURFACE = new Color(43, 64, 52);
     private static final Color EMPTY = new Color(233, 199, 136);
     private static final Color EMPTY_SURFACE = new Color(68, 59, 43);
+    /** Header center column after the status badge, disclosure icon, and card padding. */
+    static final int TITLE_COLUMN_WIDTH = 120;
     private static final Border CARD_BORDER = BorderFactory.createCompoundBorder(
         BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
     private final Actions actions;
     private final JPanel cards = new JPanel();
     private final JScrollPane scrollPane;
-    private final JLabel builtValue = new JLabel("—");
+    private final JLabel builtValue = new JLabel("-");
     private final JLabel builtCaption = new JLabel("STASH units built");
     private final JLabel stockCaption = new JLabel("Contents not scanned");
     private final JLabel resultCount = new JLabel("0 locations");
     private final JLabel statusLabel = new JLabel("Sign in to inspect your STASH units.");
-    private final JTextField search = new JTextField();
+    private final JTextField search = new PlaceholderTextField("Search locations or items");
     private final JComboBox<TierOption> tier = new JComboBox<>(TierOption.values());
     private final Map<Filter, JToggleButton> filters = new HashMap<>();
     private final JToggleButton shortlistButton = toggleButton("My list");
@@ -204,7 +213,7 @@ public final class StashLedgerPanel extends PluginPanel
         panel.setOpaque(false);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 39));
 
-        JLabel icon = new JLabel("▣", SwingConstants.CENTER);
+        JLabel icon = new JLabel(new DrawnIcon(IconType.CRATE, 20, GOLD), SwingConstants.CENTER);
         icon.setOpaque(true);
         icon.setForeground(GOLD);
         icon.setBackground(new Color(56, 48, 37));
@@ -225,7 +234,7 @@ public final class StashLedgerPanel extends PluginPanel
         title.add(subtitle);
         panel.add(title, BorderLayout.CENTER);
 
-        JButton refresh = iconButton("↻", "Refresh construction scan");
+        JButton refresh = iconButton(new DrawnIcon(IconType.REFRESH, 14, GOLD), "Refresh construction scan");
         refresh.addActionListener(event -> actions.refresh());
         panel.add(refresh, BorderLayout.EAST);
         return panel;
@@ -408,9 +417,9 @@ public final class StashLedgerPanel extends PluginPanel
         int empty = (int) entries.stream().filter(entry -> entry.getBuildStatus() == BuildStatus.BUILT
             && entry.getContentsStatus() == ContentsStatus.EMPTY).count();
         int unknown = built - filled - empty;
-        builtValue.setText(loggedIn ? built + " / " + entries.size() : "—");
+        builtValue.setText(loggedIn ? built + " / " + entries.size() : "-");
         stockCaption.setText(loggedIn
-            ? "<html><div style='width:120pt'>" + filled + " stocked • " + empty + " empty<br>"
+            ? "<html><div style='width:120pt'>" + filled + " stocked | " + empty + " empty<br>"
                 + unknown + " contents unknown</div></html>"
             : "<html><div style='width:120pt'>Contents are never inferred from construction.</div></html>");
     }
@@ -431,12 +440,50 @@ public final class StashLedgerPanel extends PluginPanel
             visibleStatus = accountName.isEmpty() ? "Construction scan" : accountName;
         }
         statusLabel.setText("<html><div style='width:120pt'>" + escapeHtml(visibleStatus) + "</div></html>");
-        statusLabel.setToolTipText(visibleStatus);
+        statusLabel.setToolTipText(displayText(visibleStatus));
     }
 
     private static String escapeHtml(String value)
     {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        return displayText(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /** Static labels rendered by this panel; kept package-visible for font coverage checks. */
+    static List<String> fontSafeUiText()
+    {
+        return List.of(
+            "STASH Ledger", "Clue stash collection", "Refresh construction scan",
+            "Search locations or items", "STASH units built", "Contents not scanned",
+            "stocked | empty", "contents unknown", "All", "Not built", "Built", "Unknown", "Filled", "Empty",
+            "All clue tiers", "My list", "Hide filled", "Contents", "Stocked", "Unknown", "Empty",
+            "Listed", "Map", "Wiki", "To build", "Construction", "Clue items",
+            "Built - stocked", "Built - empty", "Built - contents unknown", "Construction unknown");
+    }
+
+    /**
+     * RuneLite's RuneScape font has intentionally limited glyph coverage. Keep
+     * catalog data exact, but render UI text with stable ASCII fallbacks rather
+     * than missing-glyph boxes in the live client.
+     */
+    static String displayText(String value)
+    {
+        if (value == null || value.isEmpty()) return value == null ? "" : value;
+        StringBuilder result = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++)
+        {
+            char character = value.charAt(index);
+            switch (character)
+            {
+                case '\u2018': case '\u2019': result.append('\''); break;
+                case '\u201c': case '\u201d': result.append('"'); break;
+                case '\u2013': case '\u2014': case '\u2212': result.append('-'); break;
+                case '\u2022': result.append('|'); break;
+                case '\u2026': result.append("..."); break;
+                case '\u00a0': result.append(' '); break;
+                default: result.append(character >= 32 && character <= 126 ? character : '?'); break;
+            }
+        }
+        return result.toString();
     }
 
     private Component emptyState(String heading, String message)
@@ -444,10 +491,10 @@ public final class StashLedgerPanel extends PluginPanel
         JPanel panel = verticalPanel();
         panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
             BorderFactory.createEmptyBorder(17, 12, 17, 12)));
-        JLabel title = new JLabel(heading, SwingConstants.CENTER);
+        JLabel title = new JLabel(displayText(heading), SwingConstants.CENTER);
         title.setForeground(new Color(224, 220, 212));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel detail = new JLabel("<html><div style='text-align:center; width:120pt'>" + message + "</div></html>");
+        JLabel detail = new JLabel("<html><div style='text-align:center; width:120pt'>" + escapeHtml(message) + "</div></html>");
         detail.setForeground(MUTED);
         detail.setFont(detail.getFont().deriveFont(11f));
         detail.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -475,9 +522,9 @@ public final class StashLedgerPanel extends PluginPanel
         header.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         header.setHorizontalAlignment(SwingConstants.LEFT);
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        header.setToolTipText((expanded ? "Collapse " : "Expand ") + definition.getName());
-        header.getAccessibleContext().setAccessibleName((expanded ? "Collapse " : "Expand ") + definition.getName());
+        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        header.setToolTipText((expanded ? "Collapse " : "Expand ") + displayText(definition.getName()));
+        header.getAccessibleContext().setAccessibleName((expanded ? "Collapse " : "Expand ") + displayText(definition.getName()));
         header.addActionListener(event -> {
             if (!expandedIds.add(definition.getId()))
             {
@@ -488,17 +535,16 @@ public final class StashLedgerPanel extends PluginPanel
         header.add(statusBadge(entry), BorderLayout.WEST);
         JPanel text = verticalPanel();
         text.setOpaque(false);
-        JLabel title = new JLabel(definition.getName());
+        JLabel title = titleLabel(definition.getName());
         title.setForeground(new Color(240, 237, 231));
         title.setFont(FontManager.getRunescapeBoldFont());
         text.add(title);
-        JLabel caption = new JLabel(definition.getTier().getLabel() + "  •  " + stateText(entry));
+        JLabel caption = new JLabel(definition.getTier().getLabel() + " - " + stateText(entry));
         caption.setForeground(stateColor(entry));
         caption.setFont(caption.getFont().deriveFont(11f));
         text.add(caption);
         header.add(text, BorderLayout.CENTER);
-        JLabel disclosure = new JLabel(expanded ? "⌃" : "⌄");
-        disclosure.setForeground(MUTED);
+        JLabel disclosure = new JLabel(new DrawnIcon(expanded ? IconType.EXPANDED : IconType.COLLAPSED, 12, MUTED));
         header.add(disclosure, BorderLayout.EAST);
         card.add(header);
 
@@ -512,7 +558,7 @@ public final class StashLedgerPanel extends PluginPanel
 
     private Component statusBadge(StashEntry entry)
     {
-        JLabel badge = new JLabel(stateGlyph(entry), SwingConstants.CENTER);
+        JLabel badge = new JLabel(new DrawnIcon(stateIcon(entry), 15, stateColor(entry)), SwingConstants.CENTER);
         badge.setPreferredSize(new Dimension(25, 25));
         badge.setOpaque(true);
         badge.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
@@ -531,11 +577,11 @@ public final class StashLedgerPanel extends PluginPanel
         detail.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         detail.add(fullWidth(sectionLabel(entry.getBuildStatus() == BuildStatus.NOT_BUILT ? "To build" : "Construction")));
         JLabel construction = new JLabel(entry.getBuildStatus() == BuildStatus.BUILT
-            ? "✓ Built • " + definition.getTier().getConstructionLevel() + " Construction"
+            ? "Built - " + definition.getTier().getConstructionLevel() + " Construction"
             : definition.getTier().getConstructionLevel() + " Construction");
         construction.setForeground(entry.getBuildStatus() == BuildStatus.BUILT ? GREEN : GOLD);
         detail.add(fullWidth(construction));
-        JLabel materials = detailText(definition.getTier().getMaterials() + " • bring hammer and saw");
+        JLabel materials = detailText(definition.getTier().getMaterials() + "; bring hammer and saw");
         materials.setForeground(MUTED);
         materials.setFont(materials.getFont().deriveFont(11f));
         detail.add(fullWidth(materials));
@@ -546,7 +592,7 @@ public final class StashLedgerPanel extends PluginPanel
             detail.add(fullWidth(sectionLabel("Clue items")));
             for (String item : definition.getItems())
             {
-                JLabel row = detailText((entry.getContentsStatus() == ContentsStatus.FILLED ? "✓ " : "• ") + item);
+                JLabel row = detailText("- " + item);
                 row.setForeground(entry.getContentsStatus() == ContentsStatus.FILLED ? GREEN : new Color(220, 215, 207));
                 row.setFont(row.getFont().deriveFont(11f));
                 detail.add(fullWidth(row));
@@ -559,6 +605,75 @@ public final class StashLedgerPanel extends PluginPanel
         return detail;
     }
 
+    /** Uses the actual RuneScape bold font width, rather than character count, for card titles. */
+    private static JLabel titleLabel(String rawTitle)
+    {
+        String title = displayText(rawTitle);
+        List<String> lines = titleLines(title);
+        JLabel label;
+        if (lines.size() == 1)
+        {
+            label = new JLabel(lines.get(0));
+        }
+        else
+        {
+            label = new JLabel("<html>" + escapeHtml(lines.get(0)) + "<br>" + escapeHtml(lines.get(1)) + "</html>");
+        }
+        label.setFont(FontManager.getRunescapeBoldFont());
+        label.setToolTipText(title);
+        label.getAccessibleContext().setAccessibleName(title);
+        return label;
+    }
+
+    /** Package-visible so the narrow-sidebar regression uses the exact production wrapping budget. */
+    static List<String> titleLines(String rawTitle)
+    {
+        String title = displayText(rawTitle);
+        FontMetrics metrics = new JLabel().getFontMetrics(FontManager.getRunescapeBoldFont());
+        if (metrics.stringWidth(title) <= TITLE_COLUMN_WIDTH)
+        {
+            return List.of(title);
+        }
+
+        int firstBreak = fittingBreak(title, metrics);
+        String first = title.substring(0, firstBreak).trim();
+        String remaining = title.substring(firstBreak).trim();
+        int secondBreak = fittingBreak(remaining, metrics);
+        String second = remaining.substring(0, secondBreak).trim();
+        if (secondBreak < remaining.length())
+        {
+            second = ellipsize(second, metrics);
+        }
+        return List.of(first, second);
+    }
+
+    private static int fittingBreak(String text, FontMetrics metrics)
+    {
+        int fitting = 0;
+        for (int index = 1; index <= text.length(); index++)
+        {
+            if (metrics.stringWidth(text.substring(0, index)) > TITLE_COLUMN_WIDTH)
+            {
+                break;
+            }
+            fitting = index;
+        }
+        if (fitting == text.length()) return fitting;
+        int wordEnd = text.lastIndexOf(' ', fitting);
+        return wordEnd > 0 ? wordEnd : Math.max(1, fitting);
+    }
+
+    private static String ellipsize(String text, FontMetrics metrics)
+    {
+        String suffix = "...";
+        int end = text.length();
+        while (end > 0 && metrics.stringWidth(text.substring(0, end).trim() + suffix) > TITLE_COLUMN_WIDTH)
+        {
+            end--;
+        }
+        return text.substring(0, Math.max(1, end)).trim() + suffix;
+    }
+
     private JPanel contentsControls(StashEntry entry)
     {
         JPanel row = new JPanel(new BorderLayout(6, 0));
@@ -569,10 +684,12 @@ public final class StashLedgerPanel extends PluginPanel
         row.add(label, BorderLayout.WEST);
         JComboBox<ContentsOption> choice = new JComboBox<>(ContentsOption.values());
         choice.setSelectedItem(ContentsOption.forStatus(entry.getContentsStatus()));
+        choice.setMinimumSize(new Dimension(1, choice.getPreferredSize().height));
         choice.setEnabled(loggedIn && entry.getBuildStatus() == BuildStatus.BUILT);
         choice.setToolTipText(choice.isEnabled()
-            ? "Confirm contents for this built STASH unit"
+            ? "Confirm contents: " + ContentsOption.forStatus(entry.getContentsStatus()).description
             : "Build this STASH before confirming its contents");
+        choice.getAccessibleContext().setAccessibleName("Contents: " + ContentsOption.forStatus(entry.getContentsStatus()).description);
         choice.addActionListener(event -> {
             if (!rebuilding && choice.isEnabled())
             {
@@ -588,7 +705,7 @@ public final class StashLedgerPanel extends PluginPanel
         JPanel row = new JPanel(new GridLayout(1, 3, 5, 0));
         row.setOpaque(false);
         String id = entry.getDefinition().getId();
-        JButton pin = compactButton(entry.isPinned() ? "★ Listed" : "☆ My list");
+        JButton pin = compactButton(entry.isPinned() ? "Listed" : "My list");
         pin.setToolTipText(entry.isPinned() ? "Remove from my list" : "Add to my list");
         pin.setEnabled(loggedIn);
         pin.addActionListener(event -> actions.togglePinned(id));
@@ -654,16 +771,16 @@ public final class StashLedgerPanel extends PluginPanel
     {
         if (entry.getBuildStatus() == BuildStatus.UNKNOWN) return "Construction unknown";
         if (entry.getBuildStatus() == BuildStatus.NOT_BUILT) return "Not built";
-        if (entry.getContentsStatus() == ContentsStatus.FILLED) return "Built • stocked";
-        if (entry.getContentsStatus() == ContentsStatus.EMPTY) return "Built • empty";
-        return "Built • contents unknown";
+        if (entry.getContentsStatus() == ContentsStatus.FILLED) return "Built - stocked";
+        if (entry.getContentsStatus() == ContentsStatus.EMPTY) return "Built - empty";
+        return "Built - contents unknown";
     }
 
-    private String stateGlyph(StashEntry entry)
+    private IconType stateIcon(StashEntry entry)
     {
-        if (entry.getBuildStatus() == BuildStatus.NOT_BUILT) return "⌂";
-        if (entry.getBuildStatus() == BuildStatus.UNKNOWN || entry.getContentsStatus() == ContentsStatus.UNKNOWN) return "?";
-        return entry.getContentsStatus() == ContentsStatus.FILLED ? "✓" : "□";
+        if (entry.getBuildStatus() == BuildStatus.NOT_BUILT) return IconType.NOT_BUILT;
+        if (entry.getBuildStatus() == BuildStatus.UNKNOWN || entry.getContentsStatus() == ContentsStatus.UNKNOWN) return IconType.UNKNOWN;
+        return entry.getContentsStatus() == ContentsStatus.FILLED ? IconType.FILLED : IconType.EMPTY;
     }
 
     private static JPanel verticalPanel()
@@ -681,6 +798,106 @@ public final class StashLedgerPanel extends PluginPanel
         component.setAlignmentX(Component.LEFT_ALIGNMENT);
         component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getMaximumSize().height));
         return component;
+    }
+
+    private enum IconType
+    {
+        CRATE, REFRESH, EXPANDED, COLLAPSED, NOT_BUILT, UNKNOWN, FILLED, EMPTY
+    }
+
+    /** Small programmatic icons avoid relying on RuneScape-font Unicode glyphs. */
+    private static final class DrawnIcon implements Icon
+    {
+        private final IconType type;
+        private final int size;
+        private final Color color;
+
+        private DrawnIcon(IconType type, int size, Color color)
+        {
+            this.type = type;
+            this.size = size;
+            this.color = color;
+        }
+
+        @Override public int getIconWidth() { return size; }
+        @Override public int getIconHeight() { return size; }
+
+        @Override
+        public void paintIcon(Component component, Graphics graphics, int x, int y)
+        {
+            Graphics2D g = (Graphics2D) graphics.create();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(color);
+            g.setStroke(new BasicStroke(Math.max(1f, size / 9f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            int inset = Math.max(2, size / 6);
+            int left = x + inset;
+            int top = y + inset;
+            int right = x + size - inset - 1;
+            int bottom = y + size - inset - 1;
+            int centerX = (left + right) / 2;
+            int centerY = (top + bottom) / 2;
+            switch (type)
+            {
+                case CRATE:
+                    g.drawRect(left, top + 2, right - left, bottom - top - 2);
+                    g.drawLine(left, top + 5, right, top + 5);
+                    g.drawLine(centerX, top + 2, centerX, bottom);
+                    break;
+                case REFRESH:
+                    g.drawArc(left, top, right - left, bottom - top, 35, 275);
+                    g.fillPolygon(new Polygon(new int[] {right, right - 5, right}, new int[] {top + 3, top + 2, top + 8}, 3));
+                    break;
+                case EXPANDED:
+                    g.fillPolygon(new Polygon(new int[] {left, right, centerX}, new int[] {bottom, bottom, top}, 3));
+                    break;
+                case COLLAPSED:
+                    g.fillPolygon(new Polygon(new int[] {left, right, centerX}, new int[] {top, top, bottom}, 3));
+                    break;
+                case NOT_BUILT:
+                    g.drawRect(left, top + 3, right - left, bottom - top - 3);
+                    g.drawLine(left, top + 6, right, top + 6);
+                    break;
+                case UNKNOWN:
+                    g.drawOval(left, top, right - left, bottom - top);
+                    g.fillOval(centerX - 1, bottom - 4, 3, 3);
+                    g.drawLine(centerX, top + 3, centerX, centerY);
+                    break;
+                case FILLED:
+                    g.drawLine(left, centerY, centerX - 1, bottom);
+                    g.drawLine(centerX - 1, bottom, right, top);
+                    break;
+                case EMPTY:
+                    g.drawRect(left, top, right - left, bottom - top);
+                    break;
+                default:
+                    break;
+            }
+            g.dispose();
+        }
+    }
+
+    /** Draws an empty-field hint without making placeholder text part of filtering. */
+    private static final class PlaceholderTextField extends JTextField
+    {
+        private final String placeholder;
+
+        private PlaceholderTextField(String placeholder)
+        {
+            this.placeholder = placeholder;
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics)
+        {
+            super.paintComponent(graphics);
+            if (!getText().isEmpty() || hasFocus()) return;
+            Graphics2D g = (Graphics2D) graphics.create();
+            g.setColor(MUTED);
+            g.setFont(getFont());
+            int baseline = (getHeight() - g.getFontMetrics().getHeight()) / 2 + g.getFontMetrics().getAscent();
+            g.drawString(placeholder, getInsets().left + 2, baseline);
+            g.dispose();
+        }
     }
 
     /** A vertically scrolling sidebar view that always uses the available RuneLite panel width. */
@@ -741,9 +958,9 @@ public final class StashLedgerPanel extends PluginPanel
         return button;
     }
 
-    private static JButton iconButton(String text, String tooltip)
+    private static JButton iconButton(Icon icon, String tooltip)
     {
-        JButton button = new JButton(text);
+        JButton button = new JButton(icon);
         button.setToolTipText(tooltip);
         button.getAccessibleContext().setAccessibleName(tooltip);
         button.setForeground(GOLD);
@@ -835,12 +1052,18 @@ public final class StashLedgerPanel extends PluginPanel
 
     private enum ContentsOption
     {
-        UNKNOWN("Unknown / not checked", ContentsStatus.UNKNOWN),
-        EMPTY("Built, empty", ContentsStatus.EMPTY),
-        FILLED("Built, stocked", ContentsStatus.FILLED);
+        UNKNOWN("Unknown", "unknown or not checked", ContentsStatus.UNKNOWN),
+        EMPTY("Empty", "built and empty", ContentsStatus.EMPTY),
+        FILLED("Filled", "built and filled", ContentsStatus.FILLED);
         private final String label;
+        private final String description;
         private final ContentsStatus status;
-        ContentsOption(String label, ContentsStatus status) { this.label = label; this.status = status; }
+        ContentsOption(String label, String description, ContentsStatus status)
+        {
+            this.label = label;
+            this.description = description;
+            this.status = status;
+        }
         static ContentsOption forStatus(ContentsStatus status)
         {
             for (ContentsOption option : values()) if (option.status == status) return option;

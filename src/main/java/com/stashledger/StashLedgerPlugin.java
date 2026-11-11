@@ -426,7 +426,8 @@ public class StashLedgerPlugin extends Plugin
         long currentLifecycle = lifecycle;
         long epoch = accountEpoch;
         List<StashEntry> snapshot = state.snapshot();
-        boolean loggedIn = profile != null && client.getGameState() == GameState.LOGGED_IN;
+        boolean loggedIn = profile != null && client.getGameState() == GameState.LOGGED_IN
+            && Objects.equals(profile, configManager.getRSProfileKey());
         if (overviewMarkers != null)
         {
             overviewMarkers.refresh(snapshot, loggedIn && config.showAllMapMarkers(), config.hideFilledMapMarkers());

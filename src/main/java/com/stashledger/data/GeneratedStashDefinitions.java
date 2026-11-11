@@ -7,6 +7,7 @@ package com.stashledger.data;
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashTier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import net.runelite.api.coords.WorldPoint;
@@ -289,7 +290,6 @@ final class GeneratedStashDefinitions
         {
             throw new IllegalStateException("STASH unit has no world point: " + id);
         }
-        WorldPoint point = points[0];
-        definitions.add(new StashDefinition(id, unit.getObjectId(), name, tier, point.getX(), point.getY(), point.getPlane(), requirements));
+        definitions.add(new StashDefinition(id, unit.getObjectId(), name, tier, Arrays.asList(points), requirements));
     }
 }

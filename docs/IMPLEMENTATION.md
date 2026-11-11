@@ -7,13 +7,14 @@ for the rendered interface and development setup.
 
 - Full current RuneLite STASH catalog, tiers, construction requirements, clue items.
 - Native Swing sidebar matching the compact dark/gold location-card concept.
-- All / Not built / Built / Unknown filters, tier and text filters, expandable
+- All / Not built / Built / Unknown / Filled / Empty filters, Hide filled, tier and text filters, expandable
   cards, overall built/filled/empty/contents-unknown counts, account-scoped shortlist.
 - Automatically scan construction using the existing Watson check script on
   the RuneLite client thread. Never treat unavailable data as false.
 - Separate construction and contents states. Contents can be synced from
-  Watson's noticeboard or explicitly confirmed by the user. No guessed state.
-- Real map and Wiki actions, no gameplay automation, no remote account uploads.
+  Watson's noticeboard, an exact confirmed STASH interaction or the user.
+- Needed-item dots in inventory/bank/equipment; optional all-unit map markers
+  and per-card map and Wiki actions. No gameplay automation or remote uploads.
 - Log out clears visible account state; switching profile never mixes accounts.
 
 ## Shared Java contracts (Java 11)
@@ -48,3 +49,21 @@ State mutation and game access stay on RuneLite's client thread. Immutable
 snapshots cross to the Swing EDT. Account identity and lifecycle checks reject
 callbacks captured by a previous session, and a complete construction scan is
 required before applying Watson contents.
+
+`StashInteractionTracker` correlates a single Search target with the two exact
+success strings used by RuneLite's pinned `ClueScrollPlugin`. The event adapter
+checks the object ID and instance-aware coordinates, cancels on a later menu
+action, expires after 30 game ticks, and rechecks account identity and proximity
+before applying contents. Login, logout, world hopping and disabling tracking
+clear pending interactions. Construction remains separately script-derived.
+
+`NeededItemProvider` publishes an immutable set of source-declared item candidates
+for units not confirmed filled. Item alternatives are flattened only for passive
+highlighting; this is not an equipment-satisfaction or possession-count model.
+`StashNeededItemOverlay` draws a gold planner dot without modifying widgets or
+items. Profile changes and disabling highlights clear the snapshot.
+
+`StashMapMarkers` owns overview markers separately from the selected card marker.
+It preserves unknown states, can hide filled units, and removes only its own
+markers at shutdown or account changes. Settings updates run on the client
+thread; markers do not rebuild when the visible states are unchanged.

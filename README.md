@@ -9,19 +9,30 @@ scan never becomes a false “empty” result.
 ## Features
 
 - Browse all 119 STASH units across Beginner through Master clue tiers.
-- Filter by construction state, tier, location, or clue item; surface unknown
-  contents separately from confirmed contents.
+- Filter by construction state, filled/empty contents, tier, location, or clue
+  item; hide filled units while keeping unknown contents visible.
 - Expand a location card for construction materials and exact clue requirements.
 - Scan construction after login, a build, or a manual refresh.
 - Read saved contents from Watson's noticeboard or explicitly confirm contents
-  for a built unit. Unknown contents are distinct from empty.
+  for a built unit. Confirmed STASH Search interactions also update filled/empty
+  state automatically. Unknown contents are distinct from empty.
+- Mark needed clue items with a gold dot in inventory, bank and equipment,
+  including item variants. These are planning hints, not owned-item counts or
+  proof that an alternative equipment requirement is satisfied.
 - Keep a profile-scoped shortlist; logout and account changes clear visible
   account state.
-- Open a location on the world map or RuneLite's general STASH Wiki page. The
-  plugin never moves a character or uploads account data.
+- Show all STASH locations on the world map, optionally hiding confirmed filled
+  units, or select one location from its card. Map tooltips explain unknown,
+  not-built, empty and filled states. Open RuneLite's general STASH Wiki page.
+
+Settings let you turn item highlighting, automatic interaction tracking and
+map markers on or off. The plugin never moves a character or uploads account data.
 
 Construction uses RuneLite's Watson STASH check script. Contents are the last
-confirmed noticeboard or manual state, not a live inventory scan.
+confirmed noticeboard, interaction or manual state, not a live inventory scan.
+Interaction updates require a matching STASH object and location, the exact
+game success message, the same account, and a player still near that STASH.
+Open Watson's noticeboard to reconcile contents you changed outside this client.
 
 ## Development
 
@@ -47,9 +58,10 @@ To build and test in a suitable development environment:
 ./gradlew test jar shadowJar
 ```
 
-The latest verified development candidate passed 36 tests with no skips and six
-named source-removal/red-restore-green proofs. It also produced the 225px sidebar
-preview above. See [validation evidence](docs/validation.md).
+The test suite covers account boundaries, tracking, catalog data, filters and
+the real 225px Swing layout. Source-only negative checks prove key guards fail
+when removed and pass after exact restoration. See [validation evidence](docs/validation.md)
+for the tested commit and remaining live checks.
 
 ## Catalog, licensing, and Hub status
 
@@ -57,7 +69,7 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-`runelite-plugin.properties` declares version `0.1.0` for a future Plugin Hub
-submission. The plugin is not installed, published, or accepted by Plugin Hub.
-Submission still requires a public source repository, a reviewed immutable
-commit, and RuneLite review.
+`runelite-plugin.properties` declares version `0.1.0`. Plugin Hub submission is
+being prepared; installing the development client does not make this plugin
+available in a normal RuneLite installation. Hub availability requires RuneLite
+review and acceptance.

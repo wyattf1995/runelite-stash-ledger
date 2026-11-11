@@ -14,6 +14,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +63,7 @@ public class StashLedgerPluginTest
         client = mock(Client.class);
         config = mock(ConfigManager.class);
         ClientThread thread = mock(ClientThread.class);
-        queued = new ArrayList<>();
+        queued = Collections.synchronizedList(new ArrayList<>());
         doAnswer(invocation -> { queued.add(invocation.getArgument(0)); return null; }).when(thread).invokeLater(any(Runnable.class));
         when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
         when(config.getRSProfileKey()).thenReturn("account-a");

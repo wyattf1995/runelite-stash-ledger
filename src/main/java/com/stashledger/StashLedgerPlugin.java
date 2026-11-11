@@ -10,6 +10,7 @@ import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
 import com.stashledger.state.LedgerState;
 import com.stashledger.tracking.BuildScanner;
+import com.stashledger.tracking.StashInteractionTracker;
 import com.stashledger.tracking.WatsonBoardParser;
 import com.stashledger.ui.StashLedgerPanel;
 import java.awt.Color;
@@ -26,10 +27,14 @@ import javax.swing.SwingUtilities;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.MenuAction;
+import net.runelite.api.WorldView;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.WidgetClosed;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
@@ -75,6 +80,8 @@ public class StashLedgerPlugin extends Plugin
     private NavigationButton navigation;
     private WorldMapPoint marker;
     private StashMapMarkers overviewMarkers;
+    private final StashInteractionTracker interactions = new StashInteractionTracker(30);
+    private int interactionWorldView = -1;
     private String profile;
     private boolean saveHealthy = true;
     private boolean scanPending;
@@ -136,6 +143,7 @@ public class StashLedgerPlugin extends Plugin
         marker = null;
         if (oldMarker != null) { mapPoints.remove(oldMarker); }
         if (overviewMarkers != null) { overviewMarkers.clear(); }
+        interactions.clear();
         profile = null;
         boardPending = false;
         boardOpen = false;
@@ -149,6 +157,7 @@ public class StashLedgerPlugin extends Plugin
         clientThread.invokeLater(() ->
         {
             if (!running || token != lifecycle) { return; }
+            if (!config.autoTrackContents()) { interactions.clear(); }
             publish();
         });
     }
@@ -233,7 +242,65 @@ public class StashLedgerPlugin extends Plugin
         if (!running || (event.getType() != ChatMessageType.GAMEMESSAGE && event.getType() != ChatMessageType.SPAM)) { return; }
         String text = Text.removeTags(event.getMessage());
         if ("You build a STASH unit.".equals(text)) { requestScan(); }
-        // A chat message alone does not identify which STASH changed. Do not guess contents.
+        if (!config.autoTrackContents() || !activeAccount()) { interactions.clear(); return; }
+        // Exact core success messages confirm only the explicitly matched Search target.
+        interactions.acceptSuccessMessage(text, client.getTickCount()).ifPresent(update ->
+        {
+            StashDefinition definition = catalog.getById(update.getStashId());
+            if (definition == null || !nearInteractedStash(definition)) { return; }
+            if (state.markContents(update.getStashId(), update.getContentsStatus()))
+            {
+                save();
+                message = "Contents updated from your STASH interaction.";
+                publish();
+            }
+        });
+    }
+
+    @Subscribe
+    public void onMenuOptionClicked(MenuOptionClicked event)
+    {
+        interactions.clear();
+        if (!running || !config.autoTrackContents() || !activeAccount() || event.isConsumed()
+            || !"Search".equals(event.getMenuOption()) || !isObjectOption(event.getMenuAction())) { return; }
+        WorldView view = client.getWorldView(event.getMenuEntry().getWorldViewId());
+        if (view == null || view.getScene() == null || event.getParam0() < 0 || event.getParam1() < 0
+            || event.getParam0() >= 104 || event.getParam1() >= 104) { return; }
+        LocalPoint local = LocalPoint.fromScene(event.getParam0(), event.getParam1(), view);
+        WorldPoint clicked = WorldPoint.fromLocalInstance(view.getScene(), local, view.getPlane());
+        for (StashDefinition definition : catalog.getDefinitions())
+        {
+            if (definition.getObjectId() != event.getId()) { continue; }
+            interactions.recordInteraction(definition, event.getId(), clicked.getX(), clicked.getY(),
+                clicked.getPlane(), StashInteractionTracker.Action.SEARCH, client.getTickCount());
+            interactionWorldView = view.getId();
+            return;
+        }
+    }
+
+    private boolean activeAccount()
+    {
+        return running && saveHealthy && profile != null && client.getGameState() == GameState.LOGGED_IN
+            && Objects.equals(profile, configManager.getRSProfileKey());
+    }
+
+    private boolean nearInteractedStash(StashDefinition definition)
+    {
+        if (client.getLocalPlayer() == null || client.getLocalPlayer().getLocalLocation() == null) { return false; }
+        LocalPoint local = client.getLocalPlayer().getLocalLocation();
+        if (local.getWorldView() != interactionWorldView) { return false; }
+        WorldView view = client.getWorldView(interactionWorldView);
+        if (view == null || view.getScene() == null) { return false; }
+        WorldPoint player = WorldPoint.fromLocalInstance(view.getScene(), local, view.getPlane());
+        WorldPoint stash = new WorldPoint(definition.getX(), definition.getY(), definition.getPlane());
+        return player.distanceTo(stash) <= 2;
+    }
+
+    private static boolean isObjectOption(MenuAction action)
+    {
+        return action == MenuAction.GAME_OBJECT_FIRST_OPTION || action == MenuAction.GAME_OBJECT_SECOND_OPTION
+            || action == MenuAction.GAME_OBJECT_THIRD_OPTION || action == MenuAction.GAME_OBJECT_FOURTH_OPTION
+            || action == MenuAction.GAME_OBJECT_FIFTH_OPTION;
     }
 
     @Subscribe
@@ -281,6 +348,7 @@ public class StashLedgerPlugin extends Plugin
 
     private void clearAccount()
     {
+        interactions.clear();
         ++accountEpoch;
         profile = null;
         state = new LedgerState(catalog.getDefinitions());

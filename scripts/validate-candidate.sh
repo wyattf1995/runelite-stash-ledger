@@ -18,6 +18,12 @@ assert summary['tests'] > 0 and summary['failures'] == summary['errors'] == summ
 help_text = (root/'build/validation/launcher-help.log').read_text()
 assert '--developer-mode' in help_text and '--help' in help_text, 'Launcher did not reach RuneLite option parsing'
 summary['launcherHelpPassed'] = True
+for jar in root.glob('build/libs/*.jar'):
+    with zipfile.ZipFile(jar) as packaged:
+        for notice in ['LICENSE', 'THIRD_PARTY_NOTICES']:
+            assert packaged.read('META-INF/stash-ledger/' + notice) == (root/notice).read_bytes(), 'Packaged notice differs: ' + notice
+        assert packaged.read('runelite-plugin.properties') == (root/'runelite-plugin.properties').read_bytes(), 'Packaged metadata differs'
+summary['packagedNoticesAndMetadataPassed'] = True
 summary['artifacts'] = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in root.glob('build/libs/*.jar')}
 (root/'build/validation/summary.json').write_text(json.dumps(summary, indent=2)+'\n')
 with zipfile.ZipFile('build/validation/test-evidence.zip', 'w', zipfile.ZIP_DEFLATED) as archive:

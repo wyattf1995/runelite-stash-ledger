@@ -12,6 +12,17 @@ SPEC.loader.exec_module(generate_catalog)
 
 
 class GenerateCatalogTest(unittest.TestCase):
+    def test_escaped_quote_with_parenthesis_preserves_static_requirement(self):
+        source = r'''
+            private static final ItemRequirement ESCAPED = any("A \"quoted)\" requirement", item(ItemID.CANDIDATE));
+            new EmoteClue(ItemID.CLUE, "text", "where", STASH_ONE, ESCAPED);
+        '''
+
+        parsed, missing = generate_catalog.parse_item_ids(source, ["STASH_ONE"])
+
+        self.assertEqual({"CANDIDATE"}, parsed["STASH_ONE"]["items"])
+        self.assertEqual([], missing)
+
     def test_escaped_static_expression_and_empty_slot_do_not_create_false_ids(self):
         source = r'''
             private static final ItemRequirement ESCAPED = any("A \"quoted\" requirement", item(ItemID.CANDIDATE));

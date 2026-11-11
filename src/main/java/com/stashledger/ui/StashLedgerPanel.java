@@ -16,6 +16,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +39,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.Scrollable;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
@@ -102,22 +104,24 @@ public final class StashLedgerPanel extends PluginPanel
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-        JPanel content = new JPanel();
+        JPanel content = new SidebarContent();
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBackground(ColorScheme.DARK_GRAY_COLOR);
         content.setBorder(BorderFactory.createEmptyBorder(12, 10, 10, 10));
 
-        content.add(header());
+        content.add(fullWidth(header()));
         content.add(Box.createVerticalStrut(10));
-        content.add(summary());
+        content.add(fullWidth(summary()));
         content.add(Box.createVerticalStrut(9));
-        content.add(controls());
+        content.add(fullWidth(controls()));
         content.add(Box.createVerticalStrut(7));
-        content.add(statusRow());
+        content.add(fullWidth(statusRow()));
         content.add(Box.createVerticalStrut(7));
 
         cards.setLayout(new BoxLayout(cards, BoxLayout.Y_AXIS));
         cards.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        cards.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cards.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         content.add(cards);
         content.add(Box.createVerticalGlue());
 
@@ -212,7 +216,7 @@ public final class StashLedgerPanel extends PluginPanel
         name.setFont(FontManager.getRunescapeBoldFont());
         name.setForeground(Color.WHITE);
         title.add(name);
-        JLabel subtitle = new JLabel("Every hideaway, accounted for.");
+        JLabel subtitle = new JLabel("Clue stash collection");
         subtitle.setForeground(MUTED);
         subtitle.setFont(subtitle.getFont().deriveFont(11f));
         title.add(subtitle);
@@ -264,6 +268,7 @@ public final class StashLedgerPanel extends PluginPanel
         JPanel panel = verticalPanel();
         search.setToolTipText("Search location, clue tier, or known item");
         search.getAccessibleContext().setAccessibleName("Search STASH locations");
+        search.setAlignmentX(Component.LEFT_ALIGNMENT);
         search.setMaximumSize(new Dimension(Integer.MAX_VALUE, 29));
         panel.add(search);
         panel.add(Box.createVerticalStrut(6));
@@ -287,6 +292,8 @@ public final class StashLedgerPanel extends PluginPanel
                 rebuild();
             });
         }
+        statusFilters.setAlignmentX(Component.LEFT_ALIGNMENT);
+        statusFilters.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
         panel.add(statusFilters);
         panel.add(Box.createVerticalStrut(6));
 
@@ -302,6 +309,8 @@ public final class StashLedgerPanel extends PluginPanel
             rebuild();
         });
         selectLine.add(shortlistButton, BorderLayout.EAST);
+        selectLine.setAlignmentX(Component.LEFT_ALIGNMENT);
+        selectLine.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
         panel.add(selectLine);
         return panel;
     }
@@ -383,9 +392,9 @@ public final class StashLedgerPanel extends PluginPanel
         int unknown = built - filled - empty;
         builtValue.setText(loggedIn ? built + " / " + entries.size() : "—");
         stockCaption.setText(loggedIn
-            ? "<html><div style='width:168px'>" + filled + " stocked • " + empty + " empty<br>"
+            ? "<html><div style='width:120pt'>" + filled + " stocked • " + empty + " empty<br>"
                 + unknown + " contents unknown</div></html>"
-            : "<html><div style='width:168px'>Contents are never inferred from construction.</div></html>");
+            : "<html><div style='width:120pt'>Contents are never inferred from construction.</div></html>");
     }
 
     private void updateStatusText()
@@ -403,7 +412,7 @@ public final class StashLedgerPanel extends PluginPanel
         {
             visibleStatus = accountName.isEmpty() ? "Construction scan" : accountName;
         }
-        statusLabel.setText("<html><div style='width:190px'>" + escapeHtml(visibleStatus) + "</div></html>");
+        statusLabel.setText("<html><div style='width:120pt'>" + escapeHtml(visibleStatus) + "</div></html>");
         statusLabel.setToolTipText(visibleStatus);
     }
 
@@ -420,7 +429,7 @@ public final class StashLedgerPanel extends PluginPanel
         JLabel title = new JLabel(heading, SwingConstants.CENTER);
         title.setForeground(new Color(224, 220, 212));
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        JLabel detail = new JLabel("<html><div style='text-align:center; width:180px'>" + message + "</div></html>");
+        JLabel detail = new JLabel("<html><div style='text-align:center; width:120pt'>" + message + "</div></html>");
         detail.setForeground(MUTED);
         detail.setFont(detail.getFont().deriveFont(11f));
         detail.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -447,6 +456,8 @@ public final class StashLedgerPanel extends PluginPanel
         header.setBackground(SURFACE);
         header.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
         header.setHorizontalAlignment(SwingConstants.LEFT);
+        header.setAlignmentX(Component.LEFT_ALIGNMENT);
+        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
         header.setToolTipText((expanded ? "Collapse " : "Expand ") + definition.getName());
         header.getAccessibleContext().setAccessibleName((expanded ? "Collapse " : "Expand ") + definition.getName());
         header.addActionListener(event -> {
@@ -500,33 +511,33 @@ public final class StashLedgerPanel extends PluginPanel
         detail.setBackground(SURFACE_DETAIL);
         detail.setOpaque(true);
         detail.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        detail.add(sectionLabel(entry.getBuildStatus() == BuildStatus.NOT_BUILT ? "To build" : "Construction"));
+        detail.add(fullWidth(sectionLabel(entry.getBuildStatus() == BuildStatus.NOT_BUILT ? "To build" : "Construction")));
         JLabel construction = new JLabel(entry.getBuildStatus() == BuildStatus.BUILT
             ? "✓ Built • " + definition.getTier().getConstructionLevel() + " Construction"
             : definition.getTier().getConstructionLevel() + " Construction");
         construction.setForeground(entry.getBuildStatus() == BuildStatus.BUILT ? GREEN : GOLD);
-        detail.add(construction);
+        detail.add(fullWidth(construction));
         JLabel materials = detailText(definition.getTier().getMaterials() + " • bring hammer and saw");
         materials.setForeground(MUTED);
         materials.setFont(materials.getFont().deriveFont(11f));
-        detail.add(materials);
+        detail.add(fullWidth(materials));
 
         if (!definition.getItems().isEmpty())
         {
             detail.add(Box.createVerticalStrut(8));
-            detail.add(sectionLabel("Clue items"));
+            detail.add(fullWidth(sectionLabel("Clue items")));
             for (String item : definition.getItems())
             {
                 JLabel row = detailText((entry.getContentsStatus() == ContentsStatus.FILLED ? "✓ " : "• ") + item);
                 row.setForeground(entry.getContentsStatus() == ContentsStatus.FILLED ? GREEN : new Color(220, 215, 207));
                 row.setFont(row.getFont().deriveFont(11f));
-                detail.add(row);
+                detail.add(fullWidth(row));
             }
         }
         detail.add(Box.createVerticalStrut(8));
-        detail.add(contentsControls(entry));
+        detail.add(fullWidth(contentsControls(entry)));
         detail.add(Box.createVerticalStrut(8));
-        detail.add(actionRow(entry));
+        detail.add(fullWidth(actionRow(entry)));
         return detail;
     }
 
@@ -584,7 +595,7 @@ public final class StashLedgerPanel extends PluginPanel
     /** Constrains variable catalog text to the detail card's 225px sidebar width. */
     private static JLabel detailText(String text)
     {
-        return new JLabel("<html><div style='width:168px'>" + escapeHtml(text) + "</div></html>");
+        return new JLabel("<html><div style='width:120pt'>" + escapeHtml(text) + "</div></html>");
     }
 
     private Color stateColor(StashEntry entry)
@@ -645,6 +656,47 @@ public final class StashLedgerPanel extends PluginPanel
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
         return panel;
+    }
+
+    private static <T extends Component> T fullWidth(T component)
+    {
+        component.setAlignmentX(Component.LEFT_ALIGNMENT);
+        component.setMaximumSize(new Dimension(Integer.MAX_VALUE, component.getMaximumSize().height));
+        return component;
+    }
+
+    /** A vertically scrolling sidebar view that always uses the available RuneLite panel width. */
+    private static final class SidebarContent extends JPanel implements Scrollable
+    {
+        @Override
+        public Dimension getPreferredScrollableViewportSize()
+        {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction)
+        {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction)
+        {
+            return Math.max(16, visibleRect.height - 16);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight()
+        {
+            return false;
+        }
     }
 
     private static JToggleButton toggleButton(String text)

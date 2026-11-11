@@ -84,7 +84,7 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-`runelite-plugin.properties` declares version `0.1.0`. Plugin Hub submission is
-being prepared; installing the development client does not make this plugin
+`runelite-plugin.properties` declares version `0.1.0`. The [Plugin Hub submission](https://github.com/runelite/plugin-hub/pull/20516)
+is awaiting review; installing the development client does not make this plugin
 available in a normal RuneLite installation. Hub availability requires RuneLite
 review and acceptance.

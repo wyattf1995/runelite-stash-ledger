@@ -50,6 +50,12 @@ snapshots cross to the Swing EDT. Account identity and lifecycle checks reject
 callbacks captured by a previous session, and a complete construction scan is
 required before applying Watson contents.
 
+RuneLite starts and stops plugins on the EDT. Lifecycle invalidation happens
+immediately there, while client-owned initialization and cleanup are queued in
+order on the client thread. An event already in progress finishes before cleanup;
+a rapid restart initializes only after the retired session's resources are gone.
+The initializer checks its generation before and after creating resources.
+
 `StashInteractionTracker` correlates a single Search target with the two exact
 success strings used by RuneLite's pinned `ClueScrollPlugin`. The event adapter
 checks the object ID and instance-aware coordinates, cancels on a later menu
@@ -67,3 +73,10 @@ items. Profile changes and disabling highlights clear the snapshot.
 It preserves unknown states, can hide filled units, and removes only its own
 markers at shutdown or account changes. Settings updates run on the client
 thread; markers do not rebuild when the visible states are unchanged.
+
+Each definition retains every world point supplied by RuneLite. The current 119
+logical units have 121 physical locations: Lumbridge Swamp Caves and the cavern
+under the whirlpool each have two positions. Overview and selected markers cover
+both positions, and interaction/proximity checks accept either. Progress and
+saved contents remain keyed by the logical unit, so alternate locations never
+increase the progress denominator or create duplicate saved state.

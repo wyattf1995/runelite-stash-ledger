@@ -69,6 +69,24 @@ public class StashMapMarkersTest
         verifyNoInteractions(manager);
     }
 
+    @Test public void everyPhysicalLocationSharesOneUnitsStateAndLifecycle()
+    {
+        StashDefinition definition = new StashCatalog().getById("LUMBRIDGE_SWAMP_CAVES");
+        WorldMapPointManager manager = mock(WorldMapPointManager.class);
+        StashMapMarkers markers = new StashMapMarkers(manager);
+        markers.refresh(List.of(new StashEntry(definition, BuildStatus.BUILT, ContentsStatus.EMPTY, false)), true, true);
+        ArgumentCaptor<WorldMapPoint> points = ArgumentCaptor.forClass(WorldMapPoint.class);
+        verify(manager, times(2)).add(points.capture());
+        assertEquals(new WorldPoint(3222, 9584, 0), points.getAllValues().get(0).getWorldPoint());
+        assertEquals(new WorldPoint(3167, 9570, 0), points.getAllValues().get(1).getWorldPoint());
+        assertTrue(points.getAllValues().stream().allMatch(point -> point.getTooltip().endsWith("Built, empty")));
+        clearInvocations(manager);
+        markers.refresh(List.of(new StashEntry(definition, BuildStatus.BUILT, ContentsStatus.FILLED, false)), true, true);
+        for (WorldMapPoint point : points.getAllValues()) { verify(manager).remove(same(point)); }
+        verify(manager, never()).add(any());
+        verifyNoMoreInteractions(manager);
+    }
+
     private List<StashEntry> entries()
     {
         return List.of(

@@ -84,7 +84,7 @@ public class StashLedgerPlugin extends Plugin
     private LedgerState state;
     private StashLedgerPanel panel;
     private NavigationButton navigation;
-    private WorldMapPoint marker;
+    private final List<WorldMapPoint> selectedMarkers = new ArrayList<>();
     private StashMapMarkers overviewMarkers;
     private NeededItemProvider neededItems;
     private StashNeededItemOverlay itemOverlay;
@@ -113,6 +113,16 @@ public class StashLedgerPlugin extends Plugin
     @Override
     protected void startUp()
     {
+        running = false;
+        long currentLifecycle = ++lifecycle;
+        // PluginManager starts/stops on the EDT. Queue initialization behind any
+        // previous cleanup so a rapid re-enable cannot reuse client-owned state.
+        clientThread.invokeLater(() -> initializeClientState(currentLifecycle));
+    }
+
+    private void initializeClientState(long currentLifecycle)
+    {
+        if (currentLifecycle != lifecycle) { return; }
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
         overviewMarkers = new StashMapMarkers(mapPoints);
@@ -120,7 +130,7 @@ public class StashLedgerPlugin extends Plugin
         itemOverlay = new StashNeededItemOverlay(neededItems);
         overlayManager.add(itemOverlay);
         running = true;
-        long currentLifecycle = ++lifecycle;
+        if (currentLifecycle != lifecycle) { running = false; return; }
         SwingUtilities.invokeLater(() ->
         {
             if (!running || currentLifecycle != lifecycle) { return; }
@@ -151,9 +161,14 @@ public class StashLedgerPlugin extends Plugin
         {
             if (oldNavigation != null) { clientToolbar.removeNavigation(oldNavigation); }
         });
-        WorldMapPoint oldMarker = marker;
-        marker = null;
-        if (oldMarker != null) { mapPoints.remove(oldMarker); }
+        // An event already running on the client thread must finish before its
+        // resources are cleared. Immediate EDT cleanup can race a marker refresh.
+        clientThread.invokeLater(this::clearClientState);
+    }
+
+    private void clearClientState()
+    {
+        clearSelectedMarkers();
         if (overviewMarkers != null) { overviewMarkers.clear(); }
         if (neededItems != null) { neededItems.clear(); }
         if (itemOverlay != null) { overlayManager.remove(itemOverlay); itemOverlay = null; }
@@ -306,8 +321,7 @@ public class StashLedgerPlugin extends Plugin
         WorldView view = client.getWorldView(interactionWorldView);
         if (view == null || view.getScene() == null) { return false; }
         WorldPoint player = WorldPoint.fromLocalInstance(view.getScene(), local, view.getPlane());
-        WorldPoint stash = new WorldPoint(definition.getX(), definition.getY(), definition.getPlane());
-        return player.distanceTo(stash) <= 2;
+        return definition.getWorldPoints().stream().anyMatch(stash -> player.distanceTo(stash) <= 2);
     }
 
     private static boolean isObjectOption(MenuAction action)
@@ -373,7 +387,7 @@ public class StashLedgerPlugin extends Plugin
         boardOpen = false;
         boardPending = false;
         message = "Log in to scan construction. Open Watson's noticeboard to sync contents.";
-        if (marker != null) { mapPoints.remove(marker); marker = null; }
+        clearSelectedMarkers();
         if (overviewMarkers != null) { overviewMarkers.clear(); }
         publish();
     }
@@ -383,6 +397,12 @@ public class StashLedgerPlugin extends Plugin
         scanPending = true;
         constructionReady = false;
         scanAttempts = 0;
+    }
+
+    private void clearSelectedMarkers()
+    {
+        for (WorldMapPoint point : selectedMarkers) { mapPoints.remove(point); }
+        selectedMarkers.clear();
     }
 
     private void save()
@@ -507,12 +527,16 @@ public class StashLedgerPlugin extends Plugin
                 if (!running || token != lifecycle || mapEpoch != accountEpoch || profile == null
                     || !Objects.equals(profile, configManager.getRSProfileKey())
                     || client.getGameState() != GameState.LOGGED_IN) { return; }
-                if (marker != null) { mapPoints.remove(marker); }
-                WorldPoint point = new WorldPoint(definition.getX(), definition.getY(), definition.getPlane());
-                marker = new WorldMapPoint(point, icon());
-                marker.setName("STASH: " + definition.getName());
-                marker.setJumpOnClick(true);
-                mapPoints.add(marker);
+                clearSelectedMarkers();
+                for (WorldPoint location : definition.getWorldPoints())
+                {
+                    WorldMapPoint point = new WorldMapPoint(location, icon());
+                    point.setName("STASH: " + definition.getName());
+                    point.setJumpOnClick(true);
+                    selectedMarkers.add(point);
+                    mapPoints.add(point);
+                }
+                WorldPoint point = definition.getWorldPoints().get(0);
                 if (client.getWorldMap() != null) { client.getWorldMap().setWorldMapPositionTarget(point); }
                 message = "Marked " + definition.getName() + ". Open the world map to view it.";
                 publish();

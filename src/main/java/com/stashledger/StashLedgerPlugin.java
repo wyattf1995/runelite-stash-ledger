@@ -293,7 +293,12 @@ public class StashLedgerPlugin extends Plugin
             List<WatsonBoardParser.Cell> tierCells = new ArrayList<>();
             for (Widget child : root.getChildren())
             {
-                if (child != null) { tierCells.add(new WatsonBoardParser.Cell(child.getType(), child.getText())); }
+                // The noticeboard reader uses text (4) and check-mark sprites (5);
+                // layout/decorative children are not data rows.
+                if (child != null && (child.getType() == 4 || child.getType() == 5))
+                {
+                    tierCells.add(new WatsonBoardParser.Cell(child.getType(), child.getText()));
+                }
             }
             cells.put(tier, tierCells);
             aliases.put(tier, catalog.getWatsonAliases(tier));

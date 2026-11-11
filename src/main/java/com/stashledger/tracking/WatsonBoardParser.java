@@ -98,10 +98,9 @@ public final class WatsonBoardParser
             return "";
         }
         return value.replaceAll("<[^>]*>", "")
-            .replace("'", "")
-            .replace("’", "")
-            .replace("-", "")
-            .replace("_", "")
+            // The source board labels include parentheses, e.g. Fishing Guild (Outside).
+            // Match the catalog generator's punctuation removal exactly.
+            .replaceAll("[^\\p{L}\\p{N}\\s]", "")
             .trim()
             .replaceAll("\\s+", " ")
             .toLowerCase(Locale.ROOT);

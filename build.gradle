@@ -29,6 +29,9 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.release.set(11)
 }
+tasks.named('processResources') {
+    from('runelite-plugin.properties')
+}
 tasks.withType(Test).configureEach {
     maxParallelForks = 1
     systemProperty 'java.awt.headless', 'true'
@@ -43,6 +46,9 @@ tasks.register('run', JavaExec) {
     classpath = sourceSets.launcher.runtimeClasspath
     mainClass = 'com.stashledger.StashLedgerLauncher'
     jvmArgs '-ea'
+    if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+        jvmArgs '--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED'
+    }
     args '--developer-mode', '--debug'
 }
 tasks.register('shadowJar', Jar) {

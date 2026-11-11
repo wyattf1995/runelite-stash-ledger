@@ -9,15 +9,16 @@ scan never becomes a false “empty” result.
 ## Features
 
 - Browse all 119 STASH units across Beginner through Master clue tiers.
-- Filter by construction state, contents state, tier, location, or clue item.
+- Filter by construction state, tier, location, or clue item; surface unknown
+  contents separately from confirmed contents.
 - Expand a location card for construction materials and exact clue requirements.
 - Scan construction after login, a build, or a manual refresh.
 - Read saved contents from Watson's noticeboard or explicitly confirm contents
   for a built unit. Unknown contents are distinct from empty.
 - Keep a profile-scoped shortlist; logout and account changes clear visible
   account state.
-- Open a location on the world map or its Wiki page. The plugin never moves a
-  character or uploads account data.
+- Open a location on the world map or RuneLite's general STASH Wiki page. The
+  plugin never moves a character or uploads account data.
 
 Construction uses RuneLite's Watson STASH check script. Contents are the last
 confirmed noticeboard or manual state, not a live inventory scan.

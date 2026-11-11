@@ -56,6 +56,9 @@ PROOFS = [
     ('highlight-clear', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
      'else { neededItems.clear(); }', 'else { /* source-only negative proof */ }',
      'com.stashledger.StashLedgerPluginTest', 'itemHighlightsClearAcrossProfilesAndWhenDisabled'),
+    ('highlight-empty-snapshot', 'src/main/java/com/stashledger/items/NeededItemProvider.java',
+     '!snapshot.isEmpty() && ', '',
+     'com.stashledger.items.NeededItemProviderTest', 'doesNotCanonicalizeAfterAccountStateIsCleared'),
 ]
 results = []
 

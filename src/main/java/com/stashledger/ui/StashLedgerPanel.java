@@ -296,7 +296,7 @@ public final class StashLedgerPanel extends PluginPanel
             });
         }
         statusFilters.setAlignmentX(Component.LEFT_ALIGNMENT);
-        statusFilters.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        statusFilters.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         panel.add(statusFilters);
         panel.add(Box.createVerticalStrut(6));
 

@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
+    ('watson-parentheses', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java',
+     '.replaceAll("[^\\\\p{L}\\\\p{N}\\\\s]", "")', '.replace("\'", "").replace("’", "").replace("-", "").replace("_", "")',
+     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119WithActualParenthesizedBoardNamesAndTierCollisions'),
     ('account-epoch', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
      ' || expectedEpoch != accountEpoch', '',
      'com.stashledger.StashLedgerPluginTest', 'oldRenderedSidebarCannotMutateANewerSession'),

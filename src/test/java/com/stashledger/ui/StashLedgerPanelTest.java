@@ -46,7 +46,7 @@ public class StashLedgerPanelTest
                 entry("FISHING", "Fishing Guild bank", StashTier.HARD, BuildStatus.BUILT, ContentsStatus.UNKNOWN, false),
                 entry("DRAYNOR", "Draynor market", StashTier.EASY, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN, false),
                 entry("DUNGEON", "Dungeon entrance", StashTier.ELITE, BuildStatus.UNKNOWN, ContentsStatus.UNKNOWN, false, "Steel platebody"));
-            panel.update(entries, "Bonnie", true);
+            panel.update(entries, "Demo account", true);
         });
     }
 
@@ -79,7 +79,7 @@ public class StashLedgerPanelTest
         assertEquals(1, panel.visibleEntries().size());
         assertEquals("DUNGEON", panel.visibleEntries().get(0).getDefinition().getId());
 
-        SwingUtilities.invokeAndWait(() -> panel.update(entries, "Bonnie", true));
+        SwingUtilities.invokeAndWait(() -> panel.update(entries, "Demo account", true));
         assertEquals(1, panel.visibleEntries().size());
     }
 

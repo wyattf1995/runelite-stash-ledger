@@ -130,6 +130,7 @@ public class StashLedgerPlugin extends Plugin
         itemOverlay = new StashNeededItemOverlay(neededItems);
         overlayManager.add(itemOverlay);
         running = true;
+        if (currentLifecycle != lifecycle) { running = false; return; }
         SwingUtilities.invokeLater(() ->
         {
             if (!running || currentLifecycle != lifecycle) { return; }

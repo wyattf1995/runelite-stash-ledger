@@ -63,9 +63,9 @@ is pinned to 1.13.6, the verified Plugin Hub version at implementation time.
 ./gradlew --no-daemon --max-workers=2 test jar shadowJar
 ```
 
-`scripts/fleet-validate.sh` additionally performs five source-only negative checks
+`scripts/fleet-validate.sh` additionally performs six source-only negative checks
 for account callbacks, map callbacks, construction/contents guards and noticeboard
-name normalization, restores exact source
+name normalization and detail text width, restores exact source
 bytes, then repeats the complete suite and builds the JARs. Tests run headlessly
 and produce the actual sidebar capture in `build/ui/stash-ledger.png`.
 

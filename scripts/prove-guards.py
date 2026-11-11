@@ -59,6 +59,9 @@ PROOFS = [
     ('highlight-empty-snapshot', 'src/main/java/com/stashledger/items/NeededItemProvider.java',
      '!snapshot.isEmpty() && ', '',
      'com.stashledger.items.NeededItemProviderTest', 'doesNotCanonicalizeAfterAccountStateIsCleared'),
+    ('source-item-exclusions', 'src/main/java/com/stashledger/data/GeneratedStashItemRequirements.java',
+     'if (!excluded.contains(itemId))', 'if (true)',
+     'com.stashledger.data.StashItemRequirementsTest', 'preservesSourceDeclaredVariationExclusionsAndPositiveGroups'),
 ]
 results = []
 

@@ -1,6 +1,8 @@
 package com.stashledger;
 
+import com.google.inject.Provides;
 import com.stashledger.data.StashCatalog;
+import com.stashledger.map.StashMapMarkers;
 import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
@@ -34,6 +36,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -64,12 +67,14 @@ public class StashLedgerPlugin extends Plugin
     @Inject private ConfigManager configManager;
     @Inject private ClientToolbar clientToolbar;
     @Inject private WorldMapPointManager mapPoints;
+    @Inject private StashLedgerConfig config;
 
     private StashCatalog catalog;
     private LedgerState state;
     private StashLedgerPanel panel;
     private NavigationButton navigation;
     private WorldMapPoint marker;
+    private StashMapMarkers overviewMarkers;
     private String profile;
     private boolean saveHealthy = true;
     private boolean scanPending;
@@ -84,11 +89,18 @@ public class StashLedgerPlugin extends Plugin
     private volatile boolean running;
     private String message = "Log in to scan construction. Open Watson's noticeboard to sync contents.";
 
+    @Provides
+    StashLedgerConfig provideConfig(ConfigManager manager)
+    {
+        return manager.getConfig(StashLedgerConfig.class);
+    }
+
     @Override
     protected void startUp()
     {
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
+        overviewMarkers = new StashMapMarkers(mapPoints);
         running = true;
         long currentLifecycle = ++lifecycle;
         SwingUtilities.invokeLater(() ->
@@ -123,9 +135,22 @@ public class StashLedgerPlugin extends Plugin
         WorldMapPoint oldMarker = marker;
         marker = null;
         if (oldMarker != null) { mapPoints.remove(oldMarker); }
+        if (overviewMarkers != null) { overviewMarkers.clear(); }
         profile = null;
         boardPending = false;
         boardOpen = false;
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (!CONFIG_GROUP.equals(event.getGroup()) || !running) { return; }
+        long token = lifecycle;
+        clientThread.invokeLater(() ->
+        {
+            if (!running || token != lifecycle) { return; }
+            publish();
+        });
     }
 
     @Subscribe
@@ -266,6 +291,7 @@ public class StashLedgerPlugin extends Plugin
         boardPending = false;
         message = "Log in to scan construction. Open Watson's noticeboard to sync contents.";
         if (marker != null) { mapPoints.remove(marker); marker = null; }
+        if (overviewMarkers != null) { overviewMarkers.clear(); }
         publish();
     }
 
@@ -333,6 +359,10 @@ public class StashLedgerPlugin extends Plugin
         long epoch = accountEpoch;
         List<StashEntry> snapshot = state.snapshot();
         boolean loggedIn = profile != null && client.getGameState() == GameState.LOGGED_IN;
+        if (overviewMarkers != null)
+        {
+            overviewMarkers.refresh(snapshot, loggedIn && config.showAllMapMarkers(), config.hideFilledMapMarkers());
+        }
         String name = loggedIn && client.getLocalPlayer() != null ? client.getLocalPlayer().getName() : "";
         String status = message;
         SwingUtilities.invokeLater(() ->

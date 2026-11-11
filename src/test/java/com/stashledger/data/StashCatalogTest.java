@@ -8,10 +8,14 @@ import static org.junit.Assert.assertTrue;
 
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashTier;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.cluescrolls.clues.emote.STASHUnit;
 import org.junit.Test;
 
 public class StashCatalogTest
@@ -68,5 +72,25 @@ public class StashCatalogTest
             + catalog.getWatsonAliases(StashTier.HARD).size()
             + catalog.getWatsonAliases(StashTier.ELITE).size()
             + catalog.getWatsonAliases(StashTier.MASTER).size());
+    }
+
+    @Test
+    public void preservesEveryPinnedRuntimeWorldPoint()
+    {
+        StashCatalog catalog = new StashCatalog();
+        int locations = 0;
+
+        for (StashDefinition definition : catalog.getDefinitions())
+        {
+            List<WorldPoint> expected = Arrays.asList(STASHUnit.valueOf(definition.getId()).getWorldPoints());
+            assertEquals("world points for " + definition.getId(), expected, definition.getWorldPoints());
+            locations += definition.getWorldPoints().size();
+        }
+
+        assertEquals(121, locations);
+        assertEquals(List.of(new WorldPoint(3222, 9584, 0), new WorldPoint(3167, 9570, 0)),
+            catalog.getById("LUMBRIDGE_SWAMP_CAVES").getWorldPoints());
+        assertEquals(List.of(new WorldPoint(1764, 5367, 1), new WorldPoint(1636, 5367, 1)),
+            catalog.getById("ENTRANCE_OF_THE_CAVERN_UNDER_THE_WHIRLPOOL").getWorldPoints());
     }
 }

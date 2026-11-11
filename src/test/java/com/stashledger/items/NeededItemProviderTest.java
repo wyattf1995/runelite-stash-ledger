@@ -8,11 +8,12 @@ import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
+import com.stashledger.data.StashCatalog;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import net.runelite.client.game.ItemVariationMapping;
+import net.runelite.api.gameval.ItemID;
 import org.junit.Test;
 
 public class NeededItemProviderTest
@@ -50,15 +51,29 @@ public class NeededItemProviderTest
     }
 
     @Test
-    public void usesRuneLiteVariationsForKnownBootsOfLightnessPair()
+    public void preservesItemManagerWornCanonicalizationWithoutRuntimeVariationExpansion()
     {
-        // Pinned RuneLite item_variations.json lists base 88 and variation 89 together.
-        NeededItemProvider provider = new NeededItemProvider(id -> id, Map.of("unfinished", Set.of(88)));
+        // Pinned ItemManager.WORN_ITEMS maps this worn equipment ID to its inventory ID.
+        NeededItemProvider provider = new NeededItemProvider(id -> id == ItemID.IKOV_BOOTSOFLIGHTNESSWORN
+            ? ItemID.IKOV_BOOTSOFLIGHTNESS : id, Map.of("unfinished", Set.of(ItemID.IKOV_BOOTSOFLIGHTNESS)));
 
         provider.refresh(List.of(entry("unfinished", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN)));
 
-        assertTrue(ItemVariationMapping.getVariations(88).contains(89));
-        assertTrue("The known RuneLite variation is highlighted from the source requirement", provider.isNeeded(89));
+        assertTrue("Worn equipment remains discoverable through ItemManager canonicalization",
+            provider.isNeeded(ItemID.IKOV_BOOTSOFLIGHTNESSWORN));
+    }
+
+    @Test
+    public void doesNotReintroduceAnExcludedVariationDuringRefresh()
+    {
+        NeededItemProvider provider = new NeededItemProvider(id -> id,
+            new StashCatalog().getItemRequirementIds());
+
+        provider.refresh(List.of(entry("TENT_IN_LORD_IORWERTHS_ENCAMPMENT",
+            BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN)));
+
+        assertFalse(provider.isNeeded(ItemID.BOW_OF_FAERDHINEN_INACTIVE));
+        assertTrue(provider.isNeeded(ItemID.BOW_OF_FAERDHINEN));
     }
 
     @Test

@@ -41,7 +41,7 @@ class GenerateCatalogTest(unittest.TestCase):
     def test_empty_candidate_set_emits_a_valid_zero_argument_varargs_call(self):
         generated = generate_catalog.generate_item_requirements(
             [("STASH_EMPTY", "EASY")],
-            {"STASH_EMPTY": {"items": set(), "ranges": set()}},
+            {"STASH_EMPTY": {"items": set(), "ranges": set(), "variations": set()}},
         )
 
         self.assertIn('add(requirements, "STASH_EMPTY");', generated)
@@ -55,6 +55,33 @@ class GenerateCatalogTest(unittest.TestCase):
         )
 
         self.assertIn('add(definitions, "STASH_ONE"', generated)
+
+    def test_source_declared_variations_keep_local_exclusions(self):
+        source = '''
+            static final ItemRequirement ACTIVE_BOW = any("active bow",
+                Stream.of(
+                    ItemVariationMapping.getVariations(ItemID.BOW_INACTIVE).stream(),
+                    Stream.of(ItemID.CRYSTAL_BOW))
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty)
+                .filter(itemId -> itemId != ItemID.BOW_INACTIVE)
+                .map(ItemRequirements::item)
+                .toArray(SingleItemRequirement[]::new));
+            new EmoteClue(ItemID.CLUE, "text", "where", STASH_FILTERED, ACTIVE_BOW);
+            new EmoteClue(ItemID.CLUE, "text", "where", STASH_DIRECT, item(ItemID.BOW_INACTIVE));
+        '''
+
+        parsed, _missing = generate_catalog.parse_item_ids(
+            source, ["STASH_FILTERED", "STASH_DIRECT"])
+        generated = generate_catalog.generate_item_requirements(
+            [("STASH_FILTERED", "EASY"), ("STASH_DIRECT", "EASY")], parsed)
+
+        self.assertEqual({"CRYSTAL_BOW"}, parsed["STASH_FILTERED"]["items"])
+        self.assertEqual({("BOW_INACTIVE", ("BOW_INACTIVE",))},
+                         parsed["STASH_FILTERED"]["variations"])
+        self.assertEqual({"BOW_INACTIVE"}, parsed["STASH_DIRECT"]["items"])
+        self.assertIn('addVariations(requirements.get("STASH_FILTERED"), ItemID.BOW_INACTIVE, ItemID.BOW_INACTIVE);', generated)
+        self.assertIn('add(requirements, "STASH_DIRECT", ItemID.BOW_INACTIVE);', generated)
 
 
 if __name__ == "__main__":

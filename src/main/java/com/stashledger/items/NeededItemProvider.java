@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.IntUnaryOperator;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.ItemVariationMapping;
 
 /**
  * Creates a thread-safe snapshot of source-declared equipment candidates for
@@ -55,12 +54,7 @@ public final class NeededItemProvider implements NeededItemLookup
                 }
                 for (int requirementId : requirementIdsByStash.getOrDefault(entry.getDefinition().getId(), Set.of()))
                 {
-                    int canonicalId = canonicalize.applyAsInt(requirementId);
-                    next.add(canonicalId);
-                    for (int variationId : ItemVariationMapping.getVariations(canonicalId))
-                    {
-                        next.add(canonicalize.applyAsInt(variationId));
-                    }
+                    next.add(canonicalize.applyAsInt(requirementId));
                 }
             }
         }

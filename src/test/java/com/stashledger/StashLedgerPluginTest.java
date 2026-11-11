@@ -9,6 +9,7 @@ import com.stashledger.ui.StashLedgerPanel;
 import com.stashledger.state.LedgerState;
 import com.stashledger.map.StashMapMarkers;
 import com.stashledger.tracking.StashInteractionTracker;
+import com.stashledger.items.NeededItemProvider;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.runelite.api.Client;
 import net.runelite.api.ChatMessageType;
@@ -32,6 +34,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import org.junit.Before;
 import org.junit.Test;
@@ -237,6 +240,28 @@ public class StashLedgerPluginTest
         when(config.getRSProfileKey()).thenReturn("account-b");
         call("publish");
         verifyNoInteractions(manager);
+    }
+
+    @Test public void itemHighlightsClearAcrossProfilesAndWhenDisabled() throws Exception
+    {
+        StashDefinition definition = installInteractionScene();
+        ItemManager itemManager = mock(ItemManager.class);
+        when(itemManager.canonicalize(anyInt())).thenAnswer(invocation -> invocation.getArgument(0));
+        NeededItemProvider items = new NeededItemProvider(itemManager, Map.of(definition.getId(), Set.of(20)));
+        set("neededItems", items);
+        call("publish");
+        assertTrue(items.isNeeded(20));
+
+        when(config.getRSProfileKey()).thenReturn("account-b");
+        call("publish");
+        assertFalse(items.isNeeded(20));
+        when(config.getRSProfileKey()).thenReturn("account-a");
+        call("publish");
+        assertTrue(items.isNeeded(20));
+
+        set("config", new StashLedgerConfig() { @Override public boolean highlightItems() { return false; } });
+        call("publish");
+        assertFalse(items.isNeeded(20));
     }
 
     private StashDefinition installInteractionScene() throws Exception

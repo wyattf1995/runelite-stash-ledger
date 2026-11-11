@@ -11,6 +11,7 @@ import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -26,6 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.laf.RuneLiteLAF;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,7 +127,7 @@ public class StashLedgerPanelTest
         SwingUtilities.invokeAndWait(() -> {
             clickAccessible(panel, "Expand Barrows chest");
             click(panel, "Map");
-            click(panel, "★ Listed");
+            click(panel, "Listed");
             List<JComboBox> boxes = findAll(panel, JComboBox.class);
             boxes.get(boxes.size() - 1).setSelectedIndex(1);
         });
@@ -158,9 +160,10 @@ public class StashLedgerPanelTest
             }
             assertInsideViewport(panel, scrollPane, findButton(panel, "Hide filled"));
             assertInsideViewport(panel, scrollPane, barrows);
-            assertInsideViewport(panel, scrollPane, findButton(panel, "★ Listed"));
-            BufferedImage image = new BufferedImage(225, 680, BufferedImage.TYPE_INT_ARGB);
+            assertInsideViewport(panel, scrollPane, findButton(panel, "Listed"));
+            BufferedImage image = new BufferedImage(450, 1360, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics = image.createGraphics();
+            graphics.scale(2, 2);
             panel.paint(graphics);
             graphics.dispose();
             try
@@ -217,6 +220,48 @@ public class StashLedgerPanelTest
             layoutTree(panel);
             assertDetailTextFits(findLabelContaining(panel, "2 mahogany planks"));
             assertDetailTextFits(findLabelContaining(panel, "Any combination of a completed god book"));
+        });
+    }
+
+    @Test
+    public void runeScapeFontsCanDisplayEveryPanelTextGlyph() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            for (Font font : Arrays.asList(FontManager.getRunescapeFont(), FontManager.getRunescapeBoldFont()))
+            {
+                for (String text : StashLedgerPanel.fontSafeUiText())
+                {
+                    assertEquals("RuneScape font cannot display: " + text, -1, font.canDisplayUpTo(text));
+                }
+            }
+        });
+    }
+
+    @Test
+    public void displayFallbackKeepsCatalogTextFontSafeWithoutChangingItsSourceValue()
+    {
+        assertEquals("Bob's STASH | ready...", StashLedgerPanel.displayText("Bob\u2019s\u00a0STASH \u2022 ready\u2026"));
+    }
+
+    @Test
+    public void contentsChoiceAndLongLocationTitleFitAtSidebarWidth() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            StashEntry longTitle = entry("LONG_TITLE", "Northwestern Corner Of The Enchanted Valley",
+                StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.FILLED, false);
+            panel.update(Arrays.asList(longTitle), "Demo account", true);
+            clickAccessible(panel, "Expand Northwestern Corner Of The Enchanted Valley");
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
+            JScrollPane scrollPane = find(panel, JScrollPane.class);
+            JLabel title = findLabelContaining(panel, "Northwestern Corner");
+            JComboBox choice = findAll(panel, JComboBox.class).get(1);
+            assertTrue("Long title should use two display lines instead of a clipped single line", title.getText().startsWith("<html>"));
+            assertTrue("Long title should retain its complete value in a tooltip", title.getToolTipText().contains("Enchanted Valley"));
+            assertTrue("Contents option must fit its allocated width", choice.getPreferredSize().width <= choice.getWidth());
+            assertEquals("Stocked", choice.getSelectedItem().toString());
+            assertInsideViewport(panel, scrollPane, choice);
+            assertInsideViewport(panel, scrollPane, title);
         });
     }
 

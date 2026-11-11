@@ -1054,7 +1054,7 @@ public final class StashLedgerPanel extends PluginPanel
     {
         UNKNOWN("Unknown", "unknown or not checked", ContentsStatus.UNKNOWN),
         EMPTY("Empty", "built and empty", ContentsStatus.EMPTY),
-        FILLED("Stocked", "built and stocked", ContentsStatus.FILLED);
+        FILLED("Filled", "built and filled", ContentsStatus.FILLED);
         private final String label;
         private final String description;
         private final ContentsStatus status;

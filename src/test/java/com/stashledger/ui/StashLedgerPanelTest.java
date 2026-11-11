@@ -141,6 +141,20 @@ public class StashLedgerPanelTest
         });
     }
 
+    @Test
+    public void contentsSummaryFitsAtTheRuneLiteSidebarWidth() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
+            JLabel contents = findLabelContaining(panel, "contents unknown");
+            assertTrue("Wrapped contents summary must fit its allocated sidebar width",
+                contents.getPreferredSize().width <= contents.getWidth());
+            assertTrue("Contents summary should use the deliberate compact text width",
+                contents.getPreferredSize().width <= 168);
+        });
+    }
+
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,
                                     ContentsStatus contents, boolean pinned, String... items)
     {

@@ -1,8 +1,7 @@
 # Development build validation
 
-Verified 2026-11-10 on the guarded Linux build fleet, using Java 17 with Java 11
-bytecode targets and RuneLite 1.13.6. This is a development candidate, not a
-Plugin Hub release.
+Verified 2026-11-10 using Java 17 with Java 11 bytecode targets and RuneLite
+1.13.6. This is a development candidate, not a Plugin Hub release.
 
 Validated source: `793527bac85afe6c5f85a9686724835127cb60bf`.
 
@@ -26,13 +25,9 @@ Artifact SHA-256 values:
 538586434e4ede699f3a8c639d7eb3224e6042b38bd7b7e9d104d2b79e902412  stash-ledger-0.1.0-all.jar
 ```
 
-Evidence is retained at
-`/Users/wyattfleming/reports/runelite-stash-ledger-20261110/validation-4`.
-The fleet archive is `vpsq-4557f32f153244a29da5ef72ba858900`; export hashes,
-source identity, receipt, archive verification, and workspace retirement were
-verified. An interrupted download was recovered from that same ticket.
+Validation evidence retained with the development delivery includes source
+identity, receipts, artifact hashes, and the sidebar preview in this repository.
 
 Live login, real game-script results, Watson's live widgets, and in-game map
-interaction still need an in-game pilot. Gaming mode remained enabled, so no
-RuneLite client was launched. The plugin has not been installed in the normal
-client, published, or submitted to the Plugin Hub.
+interaction still need an in-game pilot. The plugin has not been installed in a
+normal client, published, or submitted to Plugin Hub.

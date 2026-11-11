@@ -11,6 +11,8 @@ import com.stashledger.model.StashTier;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import net.runelite.client.game.ItemVariationMapping;
 import org.junit.Test;
 
 public class NeededItemProviderTest
@@ -45,6 +47,35 @@ public class NeededItemProviderTest
         provider.clear();
         assertFalse(provider.isNeeded(20));
         assertFalse(provider.detailFor(900).isPresent());
+    }
+
+    @Test
+    public void usesRuneLiteVariationsForKnownBootsOfLightnessPair()
+    {
+        // Pinned RuneLite item_variations.json lists base 88 and variation 89 together.
+        NeededItemProvider provider = new NeededItemProvider(id -> id, Map.of("unfinished", Set.of(88)));
+
+        provider.refresh(List.of(entry("unfinished", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN)));
+
+        assertTrue(ItemVariationMapping.getVariations(88).contains(89));
+        assertTrue("The known RuneLite variation is highlighted from the source requirement", provider.isNeeded(89));
+    }
+
+    @Test
+    public void doesNotCanonicalizeAfterAccountStateIsCleared()
+    {
+        AtomicInteger canonicalizationCalls = new AtomicInteger();
+        NeededItemProvider provider = new NeededItemProvider(id ->
+        {
+            canonicalizationCalls.incrementAndGet();
+            return id;
+        }, Map.of("unfinished", Set.of(88)));
+
+        provider.clear();
+
+        assertFalse(provider.isNeeded(89));
+        assertFalse(provider.detailFor(89).isPresent());
+        assertTrue("An empty snapshot must avoid an ItemManager lookup after logout", canonicalizationCalls.get() == 0);
     }
 
     private static NeededItemProvider provider()

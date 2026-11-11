@@ -21,6 +21,8 @@ import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import org.junit.Before;
@@ -101,8 +103,15 @@ public class StashLedgerPanelTest
     public void rendersNarrowSidebarEvidence() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
+            clickAccessible(panel, "Expand Barrows chest");
             panel.setSize(new Dimension(225, 680));
-            panel.doLayout();
+            layoutTree(panel);
+            JScrollPane scrollPane = find(panel, JScrollPane.class);
+            scrollPane.getViewport().setViewPosition(new java.awt.Point(0, 0));
+            layoutTree(panel);
+            JLabel barrows = findLabel(panel, "Barrows chest");
+            assertTrue("Expanded card title should have positive rendered width", barrows.getWidth() > 0);
+            assertTrue("Expanded card title should be inside the narrow sidebar", barrows.getY() >= 0);
             BufferedImage image = new BufferedImage(225, 680, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics = image.createGraphics();
             panel.paint(graphics);
@@ -119,6 +128,17 @@ public class StashLedgerPanelTest
             }
         });
         assertTrue(new File("build/ui/stash-ledger.png").isFile());
+    }
+
+    @Test
+    public void longStatusMessageUsesAVisibleWrappedLabel() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.setStatusMessage("Watson noticeboard sync found 6 built units whose contents have not been checked yet.");
+            JLabel status = findLabelContaining(panel, "Watson noticeboard sync");
+            assertTrue(status.getText().contains("width:190px"));
+            assertTrue(status.getToolTipText().startsWith("Watson noticeboard sync"));
+        });
     }
 
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,
@@ -185,16 +205,23 @@ public class StashLedgerPanelTest
 
     private static <T extends Component> T find(Component component, Class<T> type)
     {
+        T found = findOrNull(component, type);
+        if (found != null) return found;
+        throw new AssertionError("Missing component " + type.getSimpleName());
+    }
+
+    private static <T extends Component> T findOrNull(Component component, Class<T> type)
+    {
         if (type.isInstance(component)) return type.cast(component);
         if (component instanceof java.awt.Container)
         {
             for (Component child : ((java.awt.Container) component).getComponents())
             {
-                T found = find(child, type);
+                T found = findOrNull(child, type);
                 if (found != null) return found;
             }
         }
-        throw new AssertionError("Missing component " + type.getSimpleName());
+        return null;
     }
 
     private static <T extends Component> List<T> findAll(Component component, Class<T> type)
@@ -210,6 +237,61 @@ public class StashLedgerPanelTest
         if (component instanceof java.awt.Container)
         {
             for (Component child : ((java.awt.Container) component).getComponents()) collect(child, type, found);
+        }
+    }
+
+    private static JLabel findLabel(Component component, String text)
+    {
+        return findLabelContaining(component, text, true);
+    }
+
+    private static JLabel findLabelContaining(Component component, String text)
+    {
+        return findLabelContaining(component, text, false);
+    }
+
+    private static JLabel findLabelContaining(Component component, String text, boolean exact)
+    {
+        if (component instanceof JLabel)
+        {
+            String value = ((JLabel) component).getText();
+            if (value != null && (exact ? text.equals(value) : value.contains(text))) return (JLabel) component;
+        }
+        if (component instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) component).getComponents())
+            {
+                JLabel found = findLabelContainingOrNull(child, text, exact);
+                if (found != null) return found;
+            }
+        }
+        throw new AssertionError("Missing label: " + text);
+    }
+
+    private static JLabel findLabelContainingOrNull(Component component, String text, boolean exact)
+    {
+        if (component instanceof JLabel)
+        {
+            String value = ((JLabel) component).getText();
+            if (value != null && (exact ? text.equals(value) : value.contains(text))) return (JLabel) component;
+        }
+        if (component instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) component).getComponents())
+            {
+                JLabel found = findLabelContainingOrNull(child, text, exact);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private static void layoutTree(Component component)
+    {
+        if (component instanceof java.awt.Container)
+        {
+            ((java.awt.Container) component).doLayout();
+            for (Component child : ((java.awt.Container) component).getComponents()) layoutTree(child);
         }
     }
 

@@ -145,10 +145,19 @@ def parse_item_ids(source, identifiers):
     """
     known = set(identifiers)
     static = static_requirement_expressions(source)
-    result = {identifier: {"items": set(), "ranges": set()} for identifier in identifiers}
+    result = {identifier: {"items": set(), "ranges": set(), "variations": set()} for identifier in identifiers}
 
     def add_expression(target, expression, seen_symbols):
-        target["items"].update(re.findall(r"ItemID\.([A-Z0-9_]+)", expression))
+        variation_bases = set(re.findall(
+            r"ItemVariationMapping\.getVariations\(ItemID\.([A-Z0-9_]+)\)", expression))
+        exclusions = set(re.findall(
+            r"\.filter\(itemId\s*->\s*itemId\s*!=\s*ItemID\.([A-Z0-9_]+)\)", expression))
+        target["items"].update(
+            set(re.findall(r"ItemID\.([A-Z0-9_]+)", expression)) - variation_bases - exclusions)
+        for base in variation_bases:
+            # Keep each source expression group distinct: an exclusion on one
+            # group must not suppress a variant required by another STASH clause.
+            target["variations"].add((base, tuple(sorted(exclusions))))
         target["ranges"].update(re.findall(
             r"range\s*\(\s*(?:\"[^\"]*\"\s*,\s*)?ItemID\.([A-Z0-9_]+)\s*,\s*ItemID\.([A-Z0-9_]+)",
             expression))
@@ -163,7 +172,8 @@ def parse_item_ids(source, identifiers):
             continue
         add_expression(result[args[stash_index]], ",".join(args[stash_index + 1:]), set())
 
-    missing = [identifier for identifier, values in result.items() if not values["items"]]
+    missing = [identifier for identifier, values in result.items()
+               if not values["items"] and not values["ranges"] and not values["variations"]]
     # A few valid STASH locations have no equipment requirement. Keep them
     # present with an empty set so coverage remains exhaustive and they cannot
     # create a false highlight.
@@ -309,6 +319,7 @@ def generate_item_requirements(rows, item_ids):
         "import java.util.Map;",
         "import java.util.Set;",
         "import net.runelite.api.gameval.ItemID;",
+        "import net.runelite.client.game.ItemVariationMapping;",
         "",
         "final class GeneratedStashItemRequirements",
         "{",
@@ -327,6 +338,10 @@ def generate_item_requirements(rows, item_ids):
             lines.append("        add(requirements, \"%s\");" % identifier)
         for start, end in sorted(values["ranges"]):
             lines.append("        addRange(requirements.get(\"%s\"), ItemID.%s, ItemID.%s);" % (identifier, start, end))
+        for base, excluded in sorted(values["variations"]):
+            exclusions = ", ".join("ItemID." + item_id for item_id in excluded)
+            suffix = ", " + exclusions if exclusions else ""
+            lines.append("        addVariations(requirements.get(\"%s\"), ItemID.%s%s);" % (identifier, base, suffix))
     lines += [
         "        if (requirements.size() != %d)" % EXPECTED_COUNT,
         "        {",
@@ -356,6 +371,22 @@ def generate_item_requirements(rows, item_ids):
         "        for (int itemId = start; itemId <= end; itemId++)",
         "        {",
         "            values.add(itemId);",
+        "        }",
+        "    }",
+        "",
+        "    private static void addVariations(Set<Integer> values, int sourceId, int... excludedIds)",
+        "    {",
+        "        Set<Integer> excluded = new LinkedHashSet<>();",
+        "        for (int itemId : excludedIds)",
+        "        {",
+        "            excluded.add(itemId);",
+        "        }",
+        "        for (int itemId : ItemVariationMapping.getVariations(sourceId))",
+        "        {",
+        "            if (!excluded.contains(itemId))",
+        "            {",
+        "                values.add(itemId);",
+        "            }",
         "        }",
         "    }",
         "}",

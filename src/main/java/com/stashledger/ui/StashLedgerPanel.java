@@ -424,6 +424,7 @@ public final class StashLedgerPanel extends PluginPanel
         boolean expanded = expandedIds.contains(definition.getId());
         JPanel card = verticalPanel();
         card.setBackground(SURFACE);
+        card.setOpaque(true);
         card.setBorder(expanded
             ? BorderFactory.createLineBorder(GOLD_DIM)
             : CARD_BORDER);
@@ -486,6 +487,7 @@ public final class StashLedgerPanel extends PluginPanel
         StashDefinition definition = entry.getDefinition();
         JPanel detail = verticalPanel();
         detail.setBackground(SURFACE_DETAIL);
+        detail.setOpaque(true);
         detail.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         detail.add(sectionLabel(entry.getBuildStatus() == BuildStatus.NOT_BUILT ? "To build" : "Construction"));
         JLabel construction = new JLabel(entry.getBuildStatus() == BuildStatus.BUILT

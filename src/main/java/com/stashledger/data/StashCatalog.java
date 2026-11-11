@@ -1,6 +1,7 @@
 package com.stashledger.data;
 
 import com.stashledger.model.StashDefinition;
+import com.stashledger.model.StashTier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ public final class StashCatalog
 {
     private final List<StashDefinition> definitions;
     private final Map<String, StashDefinition> byId;
+    private final Map<StashTier, Map<String, String>> watsonAliases;
 
     public StashCatalog()
     {
@@ -24,6 +26,7 @@ public final class StashCatalog
             }
         }
         byId = Map.copyOf(index);
+        watsonAliases = GeneratedStashDefinitions.watsonAliases();
     }
 
     public List<StashDefinition> getDefinitions()
@@ -34,5 +37,15 @@ public final class StashCatalog
     public StashDefinition getById(String id)
     {
         return byId.get(id);
+    }
+
+    /**
+     * Maps normalized noticeboard location text to catalog IDs. Callers should
+     * remove tags and punctuation, lowercase, and collapse whitespace before lookup.
+     * The tier keeps otherwise-colliding locations (such as Warriors' Guild) distinct.
+     */
+    public Map<String, String> getWatsonAliases(StashTier tier)
+    {
+        return watsonAliases.getOrDefault(tier, Map.of());
     }
 }

@@ -107,7 +107,62 @@ def parse_requirements(source, identifiers):
     return result
 
 
-def generate(rows, requirements):
+def normalize_watson_location(value):
+    value = re.sub(r"<[^>]*>", "", value)
+    value = value.replace("_", " ")
+    value = re.sub(r"[^\\w\\s]", "", value).lower()
+    return " ".join(value.split())
+
+
+def parse_watson_aliases(source, identifiers):
+    known = set(identifiers)
+    aliases = {}
+    entry_pattern = re.compile(r"^\s*([A-Z0-9_]+)\(", re.M)
+    for entry in entry_pattern.finditer(source):
+        start, index, depth, quote, escaped = entry.end(), entry.end(), 1, None, False
+        while depth:
+            char = source[index]
+            if quote:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == quote:
+                    quote = None
+            elif char == '"':
+                quote = char
+            elif char == "(":
+                depth += 1
+            elif char == ")":
+                depth -= 1
+            index += 1
+        call = source[start:index - 1]
+        args = split_top_level(call)
+        match = re.search(r"STASHUnit\.([A-Z0-9_]+)", call)
+        if not match or match.group(1) not in known or not args or not args[0].startswith('"'):
+            continue
+        stash_id = match.group(1)
+        location = args[1][1:-1] if len(args) > 1 and args[1].startswith('"') else args[0][1:-1]
+        normalized = normalize_watson_location(location)
+        previous = aliases.get(stash_id)
+        if previous is not None and previous != normalized:
+            raise ValueError("conflicting Watson aliases for " + stash_id)
+        aliases[stash_id] = normalized
+    missing = sorted(known - set(aliases))
+    if missing:
+        raise ValueError("STASH entries without Watson alias: " + ", ".join(missing))
+    return aliases
+
+
+def generate(rows, requirements, aliases):
+    tiers_by_id = dict(rows)
+    seen_aliases = {}
+    for identifier, alias in aliases.items():
+        key = (tiers_by_id[identifier], alias)
+        previous = seen_aliases.get(key)
+        if previous is not None and previous != identifier:
+            raise ValueError("Watson alias collision for %s: %s and %s" % (alias, previous, identifier))
+        seen_aliases[key] = identifier
     lines = [
         "/*",
         " * GENERATED from RuneLite source snapshots by scripts/generate-catalog.py.",
@@ -142,6 +197,23 @@ def generate(rows, requirements):
         "        return Collections.unmodifiableList(definitions);",
         "    }",
         "",
+        "    static java.util.Map<StashTier, java.util.Map<String, String>> watsonAliases()",
+        "    {",
+        "        java.util.Map<StashTier, java.util.Map<String, String>> aliases = new java.util.EnumMap<>(StashTier.class);",
+    ]
+    for tier in TIERS:
+        lines.append("        aliases.put(StashTier.%s, new java.util.HashMap<>());" % tier)
+    for identifier, tier in rows:
+        lines.append("        aliases.get(StashTier.%s).put(\"%s\", \"%s\");" % (tier, java_string(aliases[identifier]), identifier))
+    lines += [
+        "        java.util.Map<StashTier, java.util.Map<String, String>> immutable = new java.util.EnumMap<>(StashTier.class);",
+        "        for (java.util.Map.Entry<StashTier, java.util.Map<String, String>> entry : aliases.entrySet())",
+        "        {",
+        "            immutable.put(entry.getKey(), Collections.unmodifiableMap(entry.getValue()));",
+        "        }",
+        "        return Collections.unmodifiableMap(immutable);",
+        "    }",
+        "",
         "    private static void add(List<StashDefinition> definitions, String id, String name, StashTier tier, List<String> requirements)",
         "    {",
         "        STASHUnit unit = STASHUnit.valueOf(id);",
@@ -163,12 +235,14 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stash-source", type=Path, required=True)
     parser.add_argument("--clue-source", type=Path, required=True)
+    parser.add_argument("--watson-source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     rows = parse_stashes(args.stash_source.read_text())
     requirements = parse_requirements(args.clue_source.read_text(), [identifier for identifier, _ in rows])
+    aliases = parse_watson_aliases(args.watson_source.read_text(), [identifier for identifier, _ in rows])
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(generate(rows, requirements))
+    args.output.write_text(generate(rows, requirements, aliases))
 
 
 if __name__ == "__main__":

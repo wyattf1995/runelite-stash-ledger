@@ -14,4 +14,9 @@ else
   printf '%s\n' 'RuneLite or Java 11+ is required to start this development build.' >&2
   exit 1
 fi
-exec "$STASH_JAVA" -ea -jar "$STASH_JAR" --developer-mode --debug
+STASH_JVM_ARGS=(-ea)
+if [[ "$(uname -s)" == Darwin ]]; then
+  # RuneLite's macOS UI needs the same module access as its official launcher.
+  STASH_JVM_ARGS+=(--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED)
+fi
+exec "$STASH_JAVA" "${STASH_JVM_ARGS[@]}" -jar "$STASH_JAR" --developer-mode --debug

@@ -75,11 +75,16 @@ public final class NeededItemProvider implements NeededItemLookup
     @Override
     public boolean isNeeded(int itemId)
     {
-        return neededIds.contains(canonicalize.applyAsInt(itemId));
+        Set<Integer> snapshot = neededIds;
+        return !snapshot.isEmpty() && snapshot.contains(canonicalize.applyAsInt(itemId));
     }
 
     public Optional<NeededItemDetail> detailFor(int itemId)
     {
+        if (neededIds.isEmpty())
+        {
+            return Optional.empty();
+        }
         int canonicalId = canonicalize.applyAsInt(itemId);
         return neededIds.contains(canonicalId)
             ? Optional.of(new NeededItemDetail(canonicalId))

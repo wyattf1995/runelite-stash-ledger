@@ -118,7 +118,7 @@ def static_requirement_expressions(source):
             if quote:
                 if escaped:
                     escaped = False
-                elif char == "\\\\":
+                elif char == "\\":
                     escaped = True
                 elif char == quote:
                     quote = None
@@ -217,7 +217,7 @@ def parse_watson_aliases(source, identifiers):
     return aliases
 
 
-def generate(rows, requirements, aliases, item_ids):
+def generate(rows, requirements, aliases):
     tiers_by_id = dict(rows)
     seen_aliases = {}
     for identifier, alias in aliases.items():
@@ -321,7 +321,10 @@ def generate_item_requirements(rows, item_ids):
     for identifier, _tier in rows:
         values = item_ids[identifier]
         names = ", ".join("ItemID." + value for value in sorted(values["items"]))
-        lines.append("        add(requirements, \"%s\", %s);" % (identifier, names))
+        if names:
+            lines.append("        add(requirements, \"%s\", %s);" % (identifier, names))
+        else:
+            lines.append("        add(requirements, \"%s\");" % identifier)
         for start, end in sorted(values["ranges"]):
             lines.append("        addRange(requirements.get(\"%s\"), ItemID.%s, ItemID.%s);" % (identifier, start, end))
     lines += [
@@ -349,9 +352,8 @@ def generate_item_requirements(rows, item_ids):
         "",
         "    private static void addRange(Set<Integer> values, int start, int end)",
         "    {",
-        "        int lower = Math.min(start, end);",
-        "        int upper = Math.max(start, end);",
-        "        for (int itemId = lower; itemId <= upper; itemId++)",
+        "        // Mirrors RangeItemRequirement: only the inclusive source direction matches.",
+        "        for (int itemId = start; itemId <= end; itemId++)",
         "        {",
         "            values.add(itemId);",
         "        }",
@@ -378,7 +380,7 @@ def main():
     if not args.item_only:
         aliases = parse_watson_aliases(args.watson_source.read_text(), [identifier for identifier, _ in rows])
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(generate(rows, requirements, aliases, item_ids))
+        args.output.write_text(generate(rows, requirements, aliases))
     if args.item_output:
         args.item_output.parent.mkdir(parents=True, exist_ok=True)
         args.item_output.write_text(generate_item_requirements(rows, item_ids))

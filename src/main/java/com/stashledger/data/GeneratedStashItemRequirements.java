@@ -198,9 +198,8 @@ final class GeneratedStashItemRequirements
 
     private static void addRange(Set<Integer> values, int start, int end)
     {
-        int lower = Math.min(start, end);
-        int upper = Math.max(start, end);
-        for (int itemId = lower; itemId <= upper; itemId++)
+        // Mirrors RangeItemRequirement: only the inclusive source direction matches.
+        for (int itemId = start; itemId <= end; itemId++)
         {
             values.add(itemId);
         }

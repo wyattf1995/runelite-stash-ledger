@@ -4,6 +4,7 @@ import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashEntry;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,12 @@ public final class NeededItemProvider implements NeededItemLookup
     NeededItemProvider(IntUnaryOperator canonicalize, Map<String, Set<Integer>> requirementIdsByStash)
     {
         this.canonicalize = canonicalize;
-        this.requirementIdsByStash = Map.copyOf(requirementIdsByStash);
+        Map<String, Set<Integer>> copy = new HashMap<>();
+        for (Map.Entry<String, Set<Integer>> entry : requirementIdsByStash.entrySet())
+        {
+            copy.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        this.requirementIdsByStash = Map.copyOf(copy);
     }
 
     /** Replaces the snapshot atomically; callers may supply any account's full ledger snapshot. */

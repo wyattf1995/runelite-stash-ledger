@@ -6,6 +6,8 @@ scan never becomes a false “empty” result.
 
 ![STASH Ledger sidebar preview](docs/sidebar-preview.png)
 
+The preview uses a small demo account, not live player progress.
+
 ## Features
 
 - Browse all 119 STASH units across Beginner through Master clue tiers.
@@ -33,6 +35,19 @@ confirmed noticeboard, interaction or manual state, not a live inventory scan.
 Interaction updates require a matching STASH object and location, the exact
 game success message, the same account, and a player still near that STASH.
 Open Watson's noticeboard to reconcile contents you changed outside this client.
+
+## Using the sidebar
+
+1. Enable **STASH Ledger** in RuneLite's plugin settings, then select the gold
+   crate on the sidebar. The development client enables it by default.
+2. Log in and select **Refresh** to scan construction for the current account.
+3. Open Watson's noticeboard in game to sync filled/empty contents across units.
+   Later confirmed STASH interactions update individual units automatically.
+4. Expand a card for materials and clue items. Use **My list** to focus on pinned
+   units, or **Hide filled** to work through unfinished storage.
+
+An unknown contents state means it has not been confirmed. It does not mean the
+unit is empty. Filled/empty is tracked per unit, not per individual stored item.
 
 ## Development
 

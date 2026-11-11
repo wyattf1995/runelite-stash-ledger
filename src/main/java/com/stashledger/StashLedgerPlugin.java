@@ -73,6 +73,7 @@ public class StashLedgerPlugin extends Plugin
     private String profile;
     private boolean saveHealthy = true;
     private boolean scanPending;
+    private boolean constructionReady;
     private int scanAttempts;
     private int boardAttempts;
     private boolean boardPending;
@@ -171,10 +172,14 @@ public class StashLedgerPlugin extends Plugin
             scanPending = false;
             try
             {
-                state.applyBuildScan(BuildScanner.scan(client, catalog.getDefinitions()));
+                Map<String, BuildStatus> scan = BuildScanner.scan(client, catalog.getDefinitions());
+                state.applyBuildScan(scan);
+                constructionReady = scan.values().stream().noneMatch(value -> value == BuildStatus.UNKNOWN);
+                if (!constructionReady) { scanPending = ++scanAttempts < 3; }
                 save();
                 message = saveHealthy
-                    ? "Construction synced. Open Watson's noticeboard to sync contents."
+                    ? (constructionReady ? "Construction synced. Open Watson's noticeboard to sync contents."
+                        : "Some construction status is unavailable. Use Refresh to try again.")
                     : "Saved data could not be read. It has been preserved; account edits are disabled.";
             }
             catch (RuntimeException ex)
@@ -256,6 +261,7 @@ public class StashLedgerPlugin extends Plugin
         state = new LedgerState(catalog.getDefinitions());
         saveHealthy = true;
         scanPending = false;
+        constructionReady = false;
         boardOpen = false;
         boardPending = false;
         message = "Log in to scan construction. Open Watson's noticeboard to sync contents.";
@@ -266,6 +272,7 @@ public class StashLedgerPlugin extends Plugin
     private void requestScan()
     {
         scanPending = true;
+        constructionReady = false;
         scanAttempts = 0;
     }
 
@@ -283,7 +290,7 @@ public class StashLedgerPlugin extends Plugin
 
     private boolean syncWatsonBoard()
     {
-        if (!saveHealthy) { return false; }
+        if (!saveHealthy || !constructionReady) { return false; }
         Map<StashTier, List<WatsonBoardParser.Cell>> cells = new EnumMap<>(StashTier.class);
         Map<StashTier, Map<String, String>> aliases = new EnumMap<>(StashTier.class);
         for (StashTier tier : StashTier.values())
@@ -375,9 +382,12 @@ public class StashLedgerPlugin extends Plugin
         @Override public void showOnMap(StashDefinition definition)
         {
             long token = lifecycle;
+            long mapEpoch = displayedEpoch;
             clientThread.invokeLater(() ->
             {
-                if (!running || token != lifecycle || client.getGameState() != GameState.LOGGED_IN) { return; }
+                if (!running || token != lifecycle || mapEpoch != accountEpoch || profile == null
+                    || !Objects.equals(profile, configManager.getRSProfileKey())
+                    || client.getGameState() != GameState.LOGGED_IN) { return; }
                 if (marker != null) { mapPoints.remove(marker); }
                 WorldPoint point = new WorldPoint(definition.getX(), definition.getY(), definition.getPlane());
                 marker = new WorldMapPoint(point, icon());

@@ -8,7 +8,7 @@ Inputs stored outside this repository for the implementation task:
 - `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/STASHUnit.java`
 - `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/EmoteClue.java`
 - `/Users/wyattfleming/reports/runelite-stash-ledger-20261110/reference/ItemRequirement.java`
-- `https://raw.githubusercontent.com/larsvansoest/emote-clue-items/master/src/main/java/com/larsvansoest/runelite/clueitems/data/StashUnit.java`
+- `https://github.com/larsvansoest/emote-clue-items/blob/2ab1220cbccba512c2f6744b217c266524e70be9/src/main/java/com/larsvansoest/runelite/clueitems/data/StashUnit.java`
 
 Regenerate after replacing those snapshots:
 

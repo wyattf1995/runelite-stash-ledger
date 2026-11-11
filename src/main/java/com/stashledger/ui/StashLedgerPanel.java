@@ -13,6 +13,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
@@ -77,6 +78,8 @@ public final class StashLedgerPanel extends PluginPanel
     private static final Color GREEN_SURFACE = new Color(43, 64, 52);
     private static final Color EMPTY = new Color(233, 199, 136);
     private static final Color EMPTY_SURFACE = new Color(68, 59, 43);
+    /** Header center column after the status badge, disclosure icon, and card padding. */
+    static final int TITLE_COLUMN_WIDTH = 120;
     private static final Border CARD_BORDER = BorderFactory.createCompoundBorder(
         BorderFactory.createLineBorder(BORDER), BorderFactory.createEmptyBorder(0, 0, 0, 0));
 
@@ -602,35 +605,73 @@ public final class StashLedgerPanel extends PluginPanel
         return detail;
     }
 
-    /** Uses two readable lines for a long location name without widening the sidebar. */
+    /** Uses the actual RuneScape bold font width, rather than character count, for card titles. */
     private static JLabel titleLabel(String rawTitle)
     {
         String title = displayText(rawTitle);
+        List<String> lines = titleLines(title);
         JLabel label;
-        if (title.length() <= 28)
+        if (lines.size() == 1)
         {
-            label = new JLabel(title);
+            label = new JLabel(lines.get(0));
         }
         else
         {
-            int firstBreak = wordBreak(title, 28);
-            String first = title.substring(0, firstBreak).trim();
-            String remaining = title.substring(firstBreak).trim();
-            int secondBreak = remaining.length() <= 30 ? remaining.length() : wordBreak(remaining, 30);
-            String second = remaining.substring(0, secondBreak).trim();
-            if (secondBreak < remaining.length()) second += "...";
-            label = new JLabel("<html>" + escapeHtml(first) + "<br>" + escapeHtml(second) + "</html>");
+            label = new JLabel("<html>" + escapeHtml(lines.get(0)) + "<br>" + escapeHtml(lines.get(1)) + "</html>");
         }
+        label.setFont(FontManager.getRunescapeBoldFont());
         label.setToolTipText(title);
         label.getAccessibleContext().setAccessibleName(title);
         return label;
     }
 
-    private static int wordBreak(String text, int maximum)
+    /** Package-visible so the narrow-sidebar regression uses the exact production wrapping budget. */
+    static List<String> titleLines(String rawTitle)
     {
-        int bounded = Math.min(maximum, text.length());
-        int space = text.lastIndexOf(' ', bounded);
-        return space > 0 ? space : bounded;
+        String title = displayText(rawTitle);
+        FontMetrics metrics = new JLabel().getFontMetrics(FontManager.getRunescapeBoldFont());
+        if (metrics.stringWidth(title) <= TITLE_COLUMN_WIDTH)
+        {
+            return List.of(title);
+        }
+
+        int firstBreak = fittingBreak(title, metrics);
+        String first = title.substring(0, firstBreak).trim();
+        String remaining = title.substring(firstBreak).trim();
+        int secondBreak = fittingBreak(remaining, metrics);
+        String second = remaining.substring(0, secondBreak).trim();
+        if (secondBreak < remaining.length())
+        {
+            second = ellipsize(second, metrics);
+        }
+        return List.of(first, second);
+    }
+
+    private static int fittingBreak(String text, FontMetrics metrics)
+    {
+        int fitting = 0;
+        for (int index = 1; index <= text.length(); index++)
+        {
+            if (metrics.stringWidth(text.substring(0, index)) > TITLE_COLUMN_WIDTH)
+            {
+                break;
+            }
+            fitting = index;
+        }
+        if (fitting == text.length()) return fitting;
+        int wordEnd = text.lastIndexOf(' ', fitting);
+        return wordEnd > 0 ? wordEnd : Math.max(1, fitting);
+    }
+
+    private static String ellipsize(String text, FontMetrics metrics)
+    {
+        String suffix = "...";
+        int end = text.length();
+        while (end > 0 && metrics.stringWidth(text.substring(0, end).trim() + suffix) > TITLE_COLUMN_WIDTH)
+        {
+            end--;
+        }
+        return text.substring(0, Math.max(1, end)).trim() + suffix;
     }
 
     private JPanel contentsControls(StashEntry entry)

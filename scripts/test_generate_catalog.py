@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""Focused, dependency-free checks for STASH item-candidate generation."""
+import importlib.util
+import unittest
+from pathlib import Path
+
+
+SPEC = importlib.util.spec_from_file_location(
+    "generate_catalog", Path(__file__).with_name("generate-catalog.py"))
+generate_catalog = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(generate_catalog)
+
+
+class GenerateCatalogTest(unittest.TestCase):
+    def test_escaped_static_expression_and_empty_slot_do_not_create_false_ids(self):
+        source = r'''
+            private static final ItemRequirement ESCAPED = any("A \"quoted\" requirement", item(ItemID.CANDIDATE));
+            new EmoteClue(ItemID.CLUE, "text", "where", STASH_ONE, ESCAPED,
+                emptySlot("Nothing equipped", EquipmentInventorySlot.HEAD));
+        '''
+
+        parsed, missing = generate_catalog.parse_item_ids(source, ["STASH_ONE"])
+
+        self.assertEqual({"CANDIDATE"}, parsed["STASH_ONE"]["items"])
+        self.assertEqual(set(), parsed["STASH_ONE"]["ranges"])
+        self.assertEqual([], missing)
+
+    def test_range_uses_the_same_inclusive_direction_as_runelite(self):
+        source = '''
+            new EmoteClue(ItemID.CLUE, "text", "where", STASH_ONE,
+                range(ItemID.FIRST, ItemID.LAST));
+        '''
+
+        parsed, _missing = generate_catalog.parse_item_ids(source, ["STASH_ONE"])
+        generated = generate_catalog.generate_item_requirements(
+            [("STASH_ONE", "EASY")], parsed)
+
+        self.assertIn("for (int itemId = start; itemId <= end; itemId++)", generated)
+        self.assertNotIn("Math.min(start, end)", generated)
+
+    def test_empty_candidate_set_emits_a_valid_zero_argument_varargs_call(self):
+        generated = generate_catalog.generate_item_requirements(
+            [("STASH_EMPTY", "EASY")],
+            {"STASH_EMPTY": {"items": set(), "ranges": set()}},
+        )
+
+        self.assertIn('add(requirements, "STASH_EMPTY");', generated)
+        self.assertNotIn('add(requirements, "STASH_EMPTY", );', generated)
+
+    def test_definition_generator_has_no_unused_item_id_parameter(self):
+        generated = generate_catalog.generate(
+            [("STASH_ONE", "EASY")],
+            {"STASH_ONE": ["required item"]},
+            {"STASH_ONE": "somewhere"},
+        )
+
+        self.assertIn('add(definitions, "STASH_ONE"', generated)
+
+
+if __name__ == "__main__":
+    unittest.main()

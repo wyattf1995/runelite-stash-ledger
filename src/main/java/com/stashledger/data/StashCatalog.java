@@ -5,6 +5,7 @@ import com.stashledger.model.StashTier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Immutable, client-independent view of the current RuneLite STASH catalog. */
 public final class StashCatalog
@@ -12,6 +13,7 @@ public final class StashCatalog
     private final List<StashDefinition> definitions;
     private final Map<String, StashDefinition> byId;
     private final Map<StashTier, Map<String, String>> watsonAliases;
+    private final Map<String, Set<Integer>> itemRequirementIds;
 
     public StashCatalog()
     {
@@ -27,6 +29,11 @@ public final class StashCatalog
         }
         byId = Map.copyOf(index);
         watsonAliases = GeneratedStashDefinitions.watsonAliases();
+        itemRequirementIds = GeneratedStashItemRequirements.load();
+        if (!itemRequirementIds.keySet().equals(byId.keySet()))
+        {
+            throw new IllegalStateException("STASH item requirements do not match the catalog");
+        }
     }
 
     public List<StashDefinition> getDefinitions()
@@ -47,5 +54,15 @@ public final class StashCatalog
     public Map<String, String> getWatsonAliases(StashTier tier)
     {
         return watsonAliases.getOrDefault(tier, Map.of());
+    }
+
+    /**
+     * Exact source-declared equipment candidate IDs, keyed by STASH ID.
+     * These are for planner highlighting only; they do not prove a player has
+     * completed a composite or alternative equipment requirement.
+     */
+    public Map<String, Set<Integer>> getItemRequirementIds()
+    {
+        return itemRequirementIds;
     }
 }

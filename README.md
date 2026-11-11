@@ -32,7 +32,7 @@ settings, and requires you to log in normally. No credentials are supplied here.
 With Java 11 or newer:
 
 ```sh
-java -jar stash-ledger-0.1.0-all.jar --developer-mode --debug
+java -ea -jar stash-ledger-0.1.0-all.jar --developer-mode --debug
 ```
 
 On a Mac with RuneLite installed, its bundled Java can be used without installing
@@ -40,12 +40,15 @@ a JDK:
 
 ```sh
 /Applications/RuneLite.app/Contents/Resources/jre/bin/java \
-  -jar stash-ledger-0.1.0-all.jar --developer-mode --debug
+  -ea -jar stash-ledger-0.1.0-all.jar --developer-mode --debug
 ```
 
 Enable **STASH Ledger** in RuneLite's plugin settings if needed, then use the
 gold crate icon in the sidebar. Log in for the construction scan. Open Watson's
 noticeboard once to populate contents, or confirm individual units manually.
+
+The packaged `run-stash-ledger.command` does this on macOS. Keep it beside the
+`-all.jar`. The `-ea` option is required by RuneLite's development plugin loader.
 
 The small `stash-ledger-0.1.0.jar` is the plugin artifact; the `-all.jar` includes
 the development launcher and its RuneLite dependencies. Dropping the small JAR

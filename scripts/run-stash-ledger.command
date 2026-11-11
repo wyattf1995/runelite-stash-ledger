@@ -1,0 +1,17 @@
+#!/bin/bash
+set -euo pipefail
+STASH_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+STASH_JAR="$STASH_DIR/stash-ledger-0.1.0-all.jar"
+if [[ ! -f "$STASH_JAR" ]]; then
+  printf '%s\n' 'Keep this launcher next to stash-ledger-0.1.0-all.jar.' >&2
+  exit 1
+fi
+if [[ -x /Applications/RuneLite.app/Contents/Resources/jre/bin/java ]]; then
+  STASH_JAVA=/Applications/RuneLite.app/Contents/Resources/jre/bin/java
+elif command -v java >/dev/null 2>&1; then
+  STASH_JAVA="$(command -v java)"
+else
+  printf '%s\n' 'RuneLite or Java 11+ is required to start this development build.' >&2
+  exit 1
+fi
+exec "$STASH_JAVA" -ea -jar "$STASH_JAR" --developer-mode --debug

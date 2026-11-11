@@ -60,10 +60,17 @@ is pinned to 1.13.6, the verified Plugin Hub version at implementation time.
 ./gradlew --no-daemon --max-workers=2 test jar shadowJar
 ```
 
-`scripts/fleet-validate.sh` additionally performs source-only negative checks for
-the account callback guard and built-only contents guard, restores exact source
+`scripts/fleet-validate.sh` additionally performs five source-only negative checks
+for account callbacks, map callbacks, construction/contents guards and noticeboard
+name normalization, restores exact source
 bytes, then repeats the complete suite and builds the JARs. Tests run headlessly
 and produce the actual sidebar capture in `build/ui/stash-ledger.png`.
+
+The fleet wrapper collects diagnostics even when validation fails. Its exit code
+reports evidence collection; `build/validation/summary.json` must contain
+`passed: true` before a candidate is accepted. A failed candidate contains its real
+logs and any real partial outputs, never substitute JARs. The underlying
+`scripts/validate-candidate.sh` returns the actual validation failure code.
 
 On Wyatt's machines, use the documented guarded build fleet with runtime
 `android` (its pinned Java 17 supports this Java 11 plugin). Do not launch a

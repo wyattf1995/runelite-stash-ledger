@@ -86,12 +86,14 @@ public final class StashLedgerPanel extends PluginPanel
     private final JComboBox<TierOption> tier = new JComboBox<>(TierOption.values());
     private final Map<Filter, JToggleButton> filters = new HashMap<>();
     private final JToggleButton shortlistButton = toggleButton("My list");
+    private final JToggleButton hideFilledButton = toggleButton("Hide filled");
     private final Set<String> expandedIds = new LinkedHashSet<>();
     private final Set<String> pinnedIds = new LinkedHashSet<>();
     private final List<StashEntry> entries = new ArrayList<>();
 
     private Filter filter = Filter.ALL;
     private boolean shortlistOnly;
+    private boolean hideFilled;
     private boolean loggedIn;
     private String accountName = "";
     private String statusMessage = "";
@@ -176,6 +178,7 @@ public final class StashLedgerPanel extends PluginPanel
             .filter(entry -> filter.matches(entry))
             .filter(entry -> selectedTier == null || selectedTier.matches(entry.getDefinition().getTier()))
             .filter(entry -> !shortlistOnly || entry.isPinned())
+            .filter(entry -> !hideFilled || entry.getContentsStatus() != ContentsStatus.FILLED)
             .filter(entry -> query.isEmpty() || matchesQuery(entry, query))
             .sorted(Comparator.comparing((StashEntry entry) -> !entry.isPinned())
                 .thenComparing(entry -> entry.getDefinition().getTier().ordinal())
@@ -273,7 +276,7 @@ public final class StashLedgerPanel extends PluginPanel
         panel.add(search);
         panel.add(Box.createVerticalStrut(6));
 
-        JPanel statusFilters = new JPanel(new GridLayout(1, 4, 3, 0));
+        JPanel statusFilters = new JPanel(new GridLayout(2, 3, 3, 3));
         statusFilters.setOpaque(false);
         ButtonGroup group = new ButtonGroup();
         for (Filter option : Filter.values())
@@ -293,7 +296,7 @@ public final class StashLedgerPanel extends PluginPanel
             });
         }
         statusFilters.setAlignmentX(Component.LEFT_ALIGNMENT);
-        statusFilters.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        statusFilters.setMaximumSize(new Dimension(Integer.MAX_VALUE, 55));
         panel.add(statusFilters);
         panel.add(Box.createVerticalStrut(6));
 
@@ -312,6 +315,21 @@ public final class StashLedgerPanel extends PluginPanel
         selectLine.setAlignmentX(Component.LEFT_ALIGNMENT);
         selectLine.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
         panel.add(selectLine);
+        panel.add(Box.createVerticalStrut(6));
+
+        JPanel contentsLine = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        contentsLine.setOpaque(false);
+        hideFilledButton.setToolTipText("Hide built STASH units with confirmed contents");
+        hideFilledButton.getAccessibleContext().setAccessibleName("Hide filled STASH units");
+        hideFilledButton.setPreferredSize(new Dimension(83, 26));
+        hideFilledButton.addActionListener(event -> {
+            hideFilled = hideFilledButton.isSelected();
+            rebuild();
+        });
+        contentsLine.add(hideFilledButton);
+        contentsLine.setAlignmentX(Component.LEFT_ALIGNMENT);
+        contentsLine.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        panel.add(contentsLine);
         return panel;
     }
 
@@ -795,7 +813,9 @@ public final class StashLedgerPanel extends PluginPanel
         ALL("All") { @Override boolean matches(StashEntry entry) { return true; } },
         NOT_BUILT("Not built") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.NOT_BUILT; } },
         BUILT("Built") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.BUILT; } },
-        UNKNOWN("Unknown") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.UNKNOWN || (entry.getBuildStatus() == BuildStatus.BUILT && entry.getContentsStatus() == ContentsStatus.UNKNOWN); } };
+        UNKNOWN("Unknown") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.UNKNOWN || (entry.getBuildStatus() == BuildStatus.BUILT && entry.getContentsStatus() == ContentsStatus.UNKNOWN); } },
+        FILLED("Filled") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.BUILT && entry.getContentsStatus() == ContentsStatus.FILLED; } },
+        EMPTY("Empty") { @Override boolean matches(StashEntry entry) { return entry.getBuildStatus() == BuildStatus.BUILT && entry.getContentsStatus() == ContentsStatus.EMPTY; } };
 
         private final String label;
         Filter(String label) { this.label = label; }

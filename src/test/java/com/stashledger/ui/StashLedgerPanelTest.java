@@ -12,6 +12,7 @@ import com.stashledger.model.StashTier;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -238,6 +239,23 @@ public class StashLedgerPanelTest
     }
 
     @Test
+    public void expandedPanelComponentTextUsesOnlyRuneScapeDisplayGlyphs() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            clickAccessible(panel, "Expand Barrows chest");
+            panel.setStatusMessage("Watson sync\u2026 contents are ready");
+            Font font = FontManager.getRunescapeFont();
+            for (String text : renderedComponentText(panel))
+            {
+                assertEquals("Rendered UI text must use its display fallback: " + text,
+                    StashLedgerPanel.displayText(text), text);
+                assertEquals("RuneScape font cannot display rendered text: " + text,
+                    -1, font.canDisplayUpTo(text));
+            }
+        });
+    }
+
+    @Test
     public void displayFallbackKeepsCatalogTextFontSafeWithoutChangingItsSourceValue()
     {
         assertEquals("Bob's STASH | ready...", StashLedgerPanel.displayText("Bob\u2019s\u00a0STASH \u2022 ready\u2026"));
@@ -259,19 +277,28 @@ public class StashLedgerPanelTest
     public void contentsChoiceAndLongLocationTitleFitAtSidebarWidth() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
-            StashEntry longTitle = entry("LONG_TITLE", "Northwestern Corner Of The Enchanted Valley",
+            String longName = "Auburys Shop In Varrock";
+            StashEntry longTitle = entry("LONG_TITLE", longName,
                 StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.FILLED, false);
             panel.update(Arrays.asList(longTitle), "Demo account", true);
-            clickAccessible(panel, "Expand Northwestern Corner Of The Enchanted Valley");
+            clickAccessible(panel, "Expand " + longName);
             panel.setSize(new Dimension(225, 680));
             layoutTree(panel);
             JScrollPane scrollPane = find(panel, JScrollPane.class);
-            JLabel title = findLabelContaining(panel, "Northwestern Corner");
+            JLabel title = findLabelContaining(panel, "Auburys");
             JComboBox choice = findAll(panel, JComboBox.class).get(1);
             assertTrue("Long title should use two display lines instead of a clipped single line", title.getText().startsWith("<html>"));
-            assertTrue("Long title should retain its complete value in a tooltip", title.getToolTipText().contains("Enchanted Valley"));
+            assertEquals("Long title should retain its complete value in a tooltip", longName, title.getToolTipText());
+            FontMetrics metrics = title.getFontMetrics(FontManager.getRunescapeBoldFont());
+            List<String> titleLines = StashLedgerPanel.titleLines(longName);
+            assertEquals("Measured narrow title should use two lines", 2, titleLines.size());
+            for (String line : titleLines)
+            {
+                assertTrue("Each measured title line must fit the card title column: " + line,
+                    metrics.stringWidth(line) <= StashLedgerPanel.TITLE_COLUMN_WIDTH);
+            }
             assertTrue("Contents option must fit its allocated width", choice.getPreferredSize().width <= choice.getWidth());
-            assertEquals("Stocked", choice.getSelectedItem().toString());
+            assertEquals("Filled", choice.getSelectedItem().toString());
             assertInsideViewport(panel, scrollPane, choice);
             assertInsideViewport(panel, scrollPane, title);
         });
@@ -373,6 +400,45 @@ public class StashLedgerPanelTest
         if (component instanceof java.awt.Container)
         {
             for (Component child : ((java.awt.Container) component).getComponents()) collect(child, type, found);
+        }
+    }
+
+    private static List<String> renderedComponentText(Component component)
+    {
+        List<String> values = new ArrayList<>();
+        collectRenderedComponentText(component, values);
+        return values;
+    }
+
+    private static void collectRenderedComponentText(Component component, List<String> values)
+    {
+        if (component instanceof JLabel && ((JLabel) component).getText() != null)
+        {
+            values.add(((JLabel) component).getText());
+        }
+        if (component instanceof AbstractButton && ((AbstractButton) component).getText() != null)
+        {
+            values.add(((AbstractButton) component).getText());
+        }
+        if (component instanceof JComboBox)
+        {
+            JComboBox<?> comboBox = (JComboBox<?>) component;
+            for (int index = 0; index < comboBox.getItemCount(); index++)
+            {
+                values.add(comboBox.getItemAt(index).toString());
+            }
+        }
+        if (component instanceof JComponent)
+        {
+            String tooltip = ((JComponent) component).getToolTipText();
+            if (tooltip != null) values.add(tooltip);
+        }
+        if (component instanceof java.awt.Container)
+        {
+            for (Component child : ((java.awt.Container) component).getComponents())
+            {
+                collectRenderedComponentText(child, values);
+            }
         }
     }
 

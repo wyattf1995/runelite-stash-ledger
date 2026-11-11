@@ -2,6 +2,7 @@
 set -euo pipefail
 mkdir -p build/validation
 java -version
+python3 scripts/test_generate_catalog.py
 ./gradlew --no-daemon --max-workers=2 test
 python3 scripts/prove-guards.py
 ./gradlew --no-daemon --max-workers=2 cleanTest test jar shadowJar

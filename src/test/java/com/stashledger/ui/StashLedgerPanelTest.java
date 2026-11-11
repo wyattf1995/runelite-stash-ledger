@@ -152,6 +152,10 @@ public class StashLedgerPanelTest
                 scrollPane.getViewport().getView().getWidth());
             assertInsideViewport(panel, scrollPane, find(panel, JTextField.class));
             assertInsideViewport(panel, scrollPane, findAll(panel, JComboBox.class).get(0));
+            for (String filter : Arrays.asList("All", "Not built", "Built", "Unknown", "Filled", "Empty"))
+            {
+                assertInsideViewport(panel, scrollPane, findButton(panel, filter));
+            }
             assertInsideViewport(panel, scrollPane, findButton(panel, "Hide filled"));
             assertInsideViewport(panel, scrollPane, barrows);
             assertInsideViewport(panel, scrollPane, findButton(panel, "★ Listed"));

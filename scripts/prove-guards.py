@@ -80,6 +80,15 @@ PROOFS = [
     ('selected-all-locations', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
      'for (WorldPoint location : definition.getWorldPoints())', 'for (WorldPoint location : definition.getWorldPoints().subList(0, 1))',
      'com.stashledger.StashLedgerPluginTest', 'selectedMapActionOwnsAndClearsEveryLocation'),
+    ('shutdown-client-serialization', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'clientThread.invokeLater(this::clearClientState);', 'clearClientState();',
+     'com.stashledger.StashLedgerPluginTest', 'shutdownDuringRefreshCannotLeaveOverviewMarkersBehind'),
+    ('restart-client-serialization', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'clientThread.invokeLater(() -> initializeClientState(currentLifecycle));', 'initializeClientState(currentLifecycle);',
+     'com.stashledger.StashLedgerPluginTest', 'rapidRestartDoesNotClearTheNewSessionsOverlay'),
+    ('stop-during-initialization', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'if (currentLifecycle != lifecycle) { running = false; return; }', '',
+     'com.stashledger.StashLedgerPluginTest', 'stopDuringInitializationCannotReactivateThePlugin'),
 ]
 results = []
 

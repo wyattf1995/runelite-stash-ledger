@@ -506,7 +506,7 @@ public final class StashLedgerPanel extends PluginPanel
             : definition.getTier().getConstructionLevel() + " Construction");
         construction.setForeground(entry.getBuildStatus() == BuildStatus.BUILT ? GREEN : GOLD);
         detail.add(construction);
-        JLabel materials = new JLabel(definition.getTier().getMaterials() + " • bring hammer and saw");
+        JLabel materials = detailText(definition.getTier().getMaterials() + " • bring hammer and saw");
         materials.setForeground(MUTED);
         materials.setFont(materials.getFont().deriveFont(11f));
         detail.add(materials);
@@ -517,7 +517,7 @@ public final class StashLedgerPanel extends PluginPanel
             detail.add(sectionLabel("Clue items"));
             for (String item : definition.getItems())
             {
-                JLabel row = new JLabel((entry.getContentsStatus() == ContentsStatus.FILLED ? "✓ " : "• ") + item);
+                JLabel row = detailText((entry.getContentsStatus() == ContentsStatus.FILLED ? "✓ " : "• ") + item);
                 row.setForeground(entry.getContentsStatus() == ContentsStatus.FILLED ? GREEN : new Color(220, 215, 207));
                 row.setFont(row.getFont().deriveFont(11f));
                 detail.add(row);
@@ -579,6 +579,12 @@ public final class StashLedgerPanel extends PluginPanel
         label.setForeground(MUTED);
         label.setFont(label.getFont().deriveFont(Font.BOLD, 10f));
         return label;
+    }
+
+    /** Constrains variable catalog text to the detail card's 225px sidebar width. */
+    private static JLabel detailText(String text)
+    {
+        return new JLabel("<html><div style='width:168px'>" + escapeHtml(text) + "</div></html>");
     }
 
     private Color stateColor(StashEntry entry)

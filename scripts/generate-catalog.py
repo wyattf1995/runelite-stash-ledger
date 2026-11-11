@@ -107,6 +107,69 @@ def parse_requirements(source, identifiers):
     return result
 
 
+def static_requirement_expressions(source):
+    """Return the source expression for named reusable equipment requirements."""
+    result = {}
+    marker = re.compile(r"(?:private\s+)?static\s+final\s+[^=;]+\s+([A-Z][A-Z0-9_]*)\s*=")
+    for match in marker.finditer(source):
+        start, index, depth, quote, escaped = match.end(), match.end(), 0, None, False
+        while index < len(source):
+            char = source[index]
+            if quote:
+                if escaped:
+                    escaped = False
+                elif char == "\\\\":
+                    escaped = True
+                elif char == quote:
+                    quote = None
+            elif char in ("'", '"'):
+                quote = char
+            elif char in "([{":
+                depth += 1
+            elif char in ")]}":
+                depth -= 1
+            elif char == ";" and depth == 0:
+                result[match.group(1)] = source[start:index]
+                break
+            index += 1
+    return result
+
+
+def parse_item_ids(source, identifiers):
+    """Extract only source-declared equipment IDs; no display-name lookup is used.
+
+    The overlay is deliberately a candidate marker, not a fulfillment checker, so
+    nested any/all alternatives are flattened only for rendering. Ranges retain
+    their source endpoints and are expanded at runtime exactly as RuneLite's
+    ItemRequirements.range does.
+    """
+    known = set(identifiers)
+    static = static_requirement_expressions(source)
+    result = {identifier: {"items": set(), "ranges": set()} for identifier in identifiers}
+
+    def add_expression(target, expression, seen_symbols):
+        target["items"].update(re.findall(r"ItemID\.([A-Z0-9_]+)", expression))
+        target["ranges"].update(re.findall(
+            r"range\s*\(\s*(?:\"[^\"]*\"\s*,\s*)?ItemID\.([A-Z0-9_]+)\s*,\s*ItemID\.([A-Z0-9_]+)",
+            expression))
+        for symbol in re.findall(r"\b[A-Z][A-Z0-9_]+\b", expression):
+            if symbol in static and symbol not in seen_symbols:
+                add_expression(target, static[symbol], seen_symbols | {symbol})
+
+    for call in calls(source):
+        args = split_top_level(call)
+        stash_index = next((index for index, value in enumerate(args) if value in known), None)
+        if stash_index is None:
+            continue
+        add_expression(result[args[stash_index]], ",".join(args[stash_index + 1:]), set())
+
+    missing = [identifier for identifier, values in result.items() if not values["items"]]
+    # A few valid STASH locations have no equipment requirement. Keep them
+    # present with an empty set so coverage remains exhaustive and they cannot
+    # create a false highlight.
+    return result, missing
+
+
 def normalize_watson_location(value):
     value = re.sub(r"<[^>]*>", "", value)
     value = value.replace("_", " ")
@@ -154,7 +217,7 @@ def parse_watson_aliases(source, identifiers):
     return aliases
 
 
-def generate(rows, requirements, aliases):
+def generate(rows, requirements, aliases, item_ids):
     tiers_by_id = dict(rows)
     seen_aliases = {}
     for identifier, alias in aliases.items():
@@ -231,18 +294,94 @@ def generate(rows, requirements, aliases):
     return "\n".join(lines)
 
 
+def generate_item_requirements(rows, item_ids):
+    lines = [
+        "/*",
+        " * GENERATED from RuneLite EmoteClue source by scripts/generate-catalog.py.",
+        " * Candidate IDs are source-declared equipment requirements only; this is not a fulfillment model.",
+        " * Do not edit manually. See docs/catalog-provenance.md and THIRD_PARTY_NOTICES.",
+        " */",
+        "package com.stashledger.data;",
+        "",
+        "import java.util.Collections;",
+        "import java.util.LinkedHashSet;",
+        "import java.util.LinkedHashMap;",
+        "import java.util.Map;",
+        "import java.util.Set;",
+        "import net.runelite.api.gameval.ItemID;",
+        "",
+        "final class GeneratedStashItemRequirements",
+        "{",
+        "    private GeneratedStashItemRequirements() { }",
+        "",
+        "    static Map<String, Set<Integer>> load()",
+        "    {",
+        "        Map<String, Set<Integer>> requirements = new LinkedHashMap<>();",
+    ]
+    for identifier, _tier in rows:
+        values = item_ids[identifier]
+        names = ", ".join("ItemID." + value for value in sorted(values["items"]))
+        lines.append("        add(requirements, \"%s\", %s);" % (identifier, names))
+        for start, end in sorted(values["ranges"]):
+            lines.append("        addRange(requirements.get(\"%s\"), ItemID.%s, ItemID.%s);" % (identifier, start, end))
+    lines += [
+        "        if (requirements.size() != %d)" % EXPECTED_COUNT,
+        "        {",
+        "            throw new IllegalStateException(\"Expected %d STASH item requirement sets but loaded \" + requirements.size());" % EXPECTED_COUNT,
+        "        }",
+        "        Map<String, Set<Integer>> immutable = new LinkedHashMap<>();",
+        "        for (Map.Entry<String, Set<Integer>> entry : requirements.entrySet())",
+        "        {",
+        "            immutable.put(entry.getKey(), Collections.unmodifiableSet(entry.getValue()));",
+        "        }",
+        "        return Collections.unmodifiableMap(immutable);",
+        "    }",
+        "",
+        "    private static void add(Map<String, Set<Integer>> requirements, String id, int... itemIds)",
+        "    {",
+        "        Set<Integer> values = new LinkedHashSet<>();",
+        "        for (int itemId : itemIds)",
+        "        {",
+        "            values.add(itemId);",
+        "        }",
+        "        requirements.put(id, values);",
+        "    }",
+        "",
+        "    private static void addRange(Set<Integer> values, int start, int end)",
+        "    {",
+        "        int lower = Math.min(start, end);",
+        "        int upper = Math.max(start, end);",
+        "        for (int itemId = lower; itemId <= upper; itemId++)",
+        "        {",
+        "            values.add(itemId);",
+        "        }",
+        "    }",
+        "}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stash-source", type=Path, required=True)
     parser.add_argument("--clue-source", type=Path, required=True)
     parser.add_argument("--watson-source", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--item-output", type=Path)
+    parser.add_argument("--item-only", action="store_true",
+        help="generate only exact item requirement candidates; does not require Watson aliases")
     args = parser.parse_args()
     rows = parse_stashes(args.stash_source.read_text())
     requirements = parse_requirements(args.clue_source.read_text(), [identifier for identifier, _ in rows])
-    aliases = parse_watson_aliases(args.watson_source.read_text(), [identifier for identifier, _ in rows])
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(generate(rows, requirements, aliases))
+    item_ids, _empty_requirement_ids = parse_item_ids(args.clue_source.read_text(), [identifier for identifier, _ in rows])
+    if not args.item_only:
+        aliases = parse_watson_aliases(args.watson_source.read_text(), [identifier for identifier, _ in rows])
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(generate(rows, requirements, aliases, item_ids))
+    if args.item_output:
+        args.item_output.parent.mkdir(parents=True, exist_ok=True)
+        args.item_output.write_text(generate_item_requirements(rows, item_ids))
 
 
 if __name__ == "__main__":

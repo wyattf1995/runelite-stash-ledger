@@ -110,7 +110,7 @@ def parse_requirements(source, identifiers):
 def normalize_watson_location(value):
     value = re.sub(r"<[^>]*>", "", value)
     value = value.replace("_", " ")
-    value = re.sub(r"[^\\w\\s]", "", value).lower()
+    value = re.sub(r"[^\w\s]", "", value).lower()
     return " ".join(value.split())
 
 

@@ -173,7 +173,7 @@ final class GeneratedStashDefinitions
         aliases.get(StashTier.EASY).put("catherby beehive field", "CATHERBY_BEEHIVE_FIELD");
         aliases.get(StashTier.EASY).put("ardougne zoo parrots", "NEAR_THE_PARROTS_IN_ARDOUGNE_ZOO");
         aliases.get(StashTier.EASY).put("rimmington road junction", "ROAD_JUNCTION_NORTH_OF_RIMMINGTON");
-        aliases.get(StashTier.EASY).put("fishing guild (outside)", "OUTSIDE_THE_FISHING_GUILD");
+        aliases.get(StashTier.EASY).put("fishing guild outside", "OUTSIDE_THE_FISHING_GUILD");
         aliases.get(StashTier.EASY).put("keep le faye", "OUTSIDE_KEEP_LE_FAYE");
         aliases.get(StashTier.EASY).put("sinclaire mansion junction", "ROAD_JUNCTION_SOUTH_OF_SINCLAIR_MANSION");
         aliases.get(StashTier.EASY).put("digsite exam centre", "OUTSIDE_THE_DIGSITE_EXAM_CENTRE");
@@ -205,7 +205,7 @@ final class GeneratedStashDefinitions
         aliases.get(StashTier.MEDIUM).put("north of the shayzien combat ring", "WEST_OF_THE_SHAYZIEN_COMBAT_RING");
         aliases.get(StashTier.MEDIUM).put("arceuus library", "ENTRANCE_OF_THE_ARCEUUS_LIBRARY");
         aliases.get(StashTier.MEDIUM).put("draynor village jail", "OUTSIDE_DRAYNOR_VILLAGE_JAIL");
-        aliases.get(StashTier.HARD).put("chaos temple in the south eastern wilderness", "EAST_OF_THE_LEVEL_19_WILDERNESS_OBELISK");
+        aliases.get(StashTier.HARD).put("chaos temple in the southeastern wilderness", "EAST_OF_THE_LEVEL_19_WILDERNESS_OBELISK");
         aliases.get(StashTier.HARD).put("fishing guild bank", "FISHING_GUILD_BANK");
         aliases.get(StashTier.HARD).put("lighthouse top floor", "TOP_FLOOR_OF_THE_LIGHTHOUSE");
         aliases.get(StashTier.HARD).put("great pyramid of sophanem", "OUTSIDE_THE_GREAT_PYRAMID_OF_SOPHANEM");
@@ -228,10 +228,10 @@ final class GeneratedStashDefinitions
         aliases.get(StashTier.ELITE).put("monastery", "SOUTHEAST_CORNER_OF_THE_MONASTERY");
         aliases.get(StashTier.ELITE).put("fishing platform", "SOUTHEAST_CORNER_OF_THE_FISHING_PLATFORM");
         aliases.get(StashTier.ELITE).put("slayer tower gargoyle room", "OUTSIDE_THE_SLAYER_TOWER_GARGOYLE_ROOM");
-        aliases.get(StashTier.ELITE).put("trollheim mountain (top)", "ON_TOP_OF_TROLLHEIM_MOUNTAIN");
+        aliases.get(StashTier.ELITE).put("trollheim mountain top", "ON_TOP_OF_TROLLHEIM_MOUNTAIN");
         aliases.get(StashTier.ELITE).put("fountain of heroes", "FOUNTAIN_OF_HEROES");
         aliases.get(StashTier.ELITE).put("whirlpool cavern", "ENTRANCE_OF_THE_CAVERN_UNDER_THE_WHIRLPOOL");
-        aliases.get(StashTier.ELITE).put("trollheim mountain (half way)", "HALFWAY_DOWN_TROLLWEISS_MOUNTAIN");
+        aliases.get(StashTier.ELITE).put("trollheim mountain halfway", "HALFWAY_DOWN_TROLLWEISS_MOUNTAIN");
         aliases.get(StashTier.ELITE).put("shayzien war tent", "SHAYZIEN_WAR_TENT");
         aliases.get(StashTier.ELITE).put("legends guild door", "OUTSIDE_THE_LEGENDS_GUILD_DOOR");
         aliases.get(StashTier.ELITE).put("ardougne market gem stall", "NEAR_THE_GEM_STALL_IN_ARDOUGNE_MARKET");

@@ -113,6 +113,16 @@ public class StashLedgerPlugin extends Plugin
     @Override
     protected void startUp()
     {
+        running = false;
+        long currentLifecycle = ++lifecycle;
+        // PluginManager starts/stops on the EDT. Queue initialization behind any
+        // previous cleanup so a rapid re-enable cannot reuse client-owned state.
+        clientThread.invokeLater(() -> initializeClientState(currentLifecycle));
+    }
+
+    private void initializeClientState(long currentLifecycle)
+    {
+        if (currentLifecycle != lifecycle) { return; }
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
         overviewMarkers = new StashMapMarkers(mapPoints);
@@ -120,7 +130,6 @@ public class StashLedgerPlugin extends Plugin
         itemOverlay = new StashNeededItemOverlay(neededItems);
         overlayManager.add(itemOverlay);
         running = true;
-        long currentLifecycle = ++lifecycle;
         SwingUtilities.invokeLater(() ->
         {
             if (!running || currentLifecycle != lifecycle) { return; }
@@ -151,6 +160,13 @@ public class StashLedgerPlugin extends Plugin
         {
             if (oldNavigation != null) { clientToolbar.removeNavigation(oldNavigation); }
         });
+        // An event already running on the client thread must finish before its
+        // resources are cleared. Immediate EDT cleanup can race a marker refresh.
+        clientThread.invokeLater(this::clearClientState);
+    }
+
+    private void clearClientState()
+    {
         clearSelectedMarkers();
         if (overviewMarkers != null) { overviewMarkers.clear(); }
         if (neededItems != null) { neededItems.clear(); }

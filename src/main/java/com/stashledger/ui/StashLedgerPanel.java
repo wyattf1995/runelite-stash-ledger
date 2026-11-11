@@ -437,7 +437,7 @@ public final class StashLedgerPanel extends PluginPanel
             visibleStatus = accountName.isEmpty() ? "Construction scan" : accountName;
         }
         statusLabel.setText("<html><div style='width:120pt'>" + escapeHtml(visibleStatus) + "</div></html>");
-        statusLabel.setToolTipText(visibleStatus);
+        statusLabel.setToolTipText(displayText(visibleStatus));
     }
 
     private static String escapeHtml(String value)

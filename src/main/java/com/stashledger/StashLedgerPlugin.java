@@ -3,6 +3,8 @@ package com.stashledger;
 import com.google.inject.Provides;
 import com.stashledger.data.StashCatalog;
 import com.stashledger.map.StashMapMarkers;
+import com.stashledger.items.NeededItemProvider;
+import com.stashledger.items.StashNeededItemOverlay;
 import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
@@ -43,10 +45,12 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.LinkBrowser;
@@ -73,6 +77,8 @@ public class StashLedgerPlugin extends Plugin
     @Inject private ClientToolbar clientToolbar;
     @Inject private WorldMapPointManager mapPoints;
     @Inject private StashLedgerConfig config;
+    @Inject private ItemManager itemManager;
+    @Inject private OverlayManager overlayManager;
 
     private StashCatalog catalog;
     private LedgerState state;
@@ -80,6 +86,8 @@ public class StashLedgerPlugin extends Plugin
     private NavigationButton navigation;
     private WorldMapPoint marker;
     private StashMapMarkers overviewMarkers;
+    private NeededItemProvider neededItems;
+    private StashNeededItemOverlay itemOverlay;
     private final StashInteractionTracker interactions = new StashInteractionTracker(30);
     private int interactionWorldView = -1;
     private String profile;
@@ -108,6 +116,9 @@ public class StashLedgerPlugin extends Plugin
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
         overviewMarkers = new StashMapMarkers(mapPoints);
+        neededItems = new NeededItemProvider(itemManager, catalog.getItemRequirementIds());
+        itemOverlay = new StashNeededItemOverlay(neededItems);
+        overlayManager.add(itemOverlay);
         running = true;
         long currentLifecycle = ++lifecycle;
         SwingUtilities.invokeLater(() ->
@@ -117,6 +128,7 @@ public class StashLedgerPlugin extends Plugin
             navigation = NavigationButton.builder().tooltip("STASH Ledger").icon(icon())
                 .priority(6).panel(panel).build();
             clientToolbar.addNavigation(navigation);
+            LOG.info("STASH Ledger sidebar ready ({} units)", catalog.getDefinitions().size());
             clientThread.invokeLater(() ->
             {
                 if (!running || currentLifecycle != lifecycle) { return; }
@@ -143,6 +155,8 @@ public class StashLedgerPlugin extends Plugin
         marker = null;
         if (oldMarker != null) { mapPoints.remove(oldMarker); }
         if (overviewMarkers != null) { overviewMarkers.clear(); }
+        if (neededItems != null) { neededItems.clear(); }
+        if (itemOverlay != null) { overlayManager.remove(itemOverlay); itemOverlay = null; }
         interactions.clear();
         profile = null;
         boardPending = false;
@@ -349,6 +363,7 @@ public class StashLedgerPlugin extends Plugin
     private void clearAccount()
     {
         interactions.clear();
+        if (neededItems != null) { neededItems.clear(); }
         ++accountEpoch;
         profile = null;
         state = new LedgerState(catalog.getDefinitions());
@@ -431,6 +446,11 @@ public class StashLedgerPlugin extends Plugin
         if (overviewMarkers != null)
         {
             overviewMarkers.refresh(snapshot, loggedIn && config.showAllMapMarkers(), config.hideFilledMapMarkers());
+        }
+        if (neededItems != null)
+        {
+            if (loggedIn && config.highlightItems()) { neededItems.refresh(snapshot); }
+            else { neededItems.clear(); }
         }
         String name = loggedIn && client.getLocalPlayer() != null ? client.getLocalPlayer().getName() : "";
         String status = message;

@@ -65,6 +65,21 @@ PROOFS = [
     ('font-safe-display', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
      'return displayText(value).replace("&", "&amp;")', 'return value.replace("&", "&amp;")',
      'com.stashledger.ui.StashLedgerPanelTest', 'unicodeStatusMessageIsRenderedAndTooledWithFontSafeText'),
+    ('catalog-all-locations', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
+     'Arrays.asList(points)', 'List.of(points[0])',
+     'com.stashledger.data.StashCatalogTest', 'preservesEveryPinnedRuntimeWorldPoint'),
+    ('tracking-all-locations', 'src/main/java/com/stashledger/tracking/StashInteractionTracker.java',
+     'definition.getWorldPoints().stream().noneMatch(', 'definition.getWorldPoints().stream().limit(1).noneMatch(',
+     'com.stashledger.tracking.StashInteractionTrackerTest', 'matchesAlternateCoordinatesWithoutAcceptingWrongPlaneOrObject'),
+    ('proximity-all-locations', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'definition.getWorldPoints().stream().anyMatch(stash ->', 'definition.getWorldPoints().stream().limit(1).anyMatch(stash ->',
+     'com.stashledger.StashLedgerPluginTest', 'alternateLocationsConfirmTheSameLogicalStash'),
+    ('overview-all-locations', 'src/main/java/com/stashledger/map/StashMapMarkers.java',
+     'for (WorldPoint location : definition.getWorldPoints())', 'for (WorldPoint location : definition.getWorldPoints().subList(0, 1))',
+     'com.stashledger.map.StashMapMarkersTest', 'everyPhysicalLocationSharesOneUnitsStateAndLifecycle'),
+    ('selected-all-locations', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'for (WorldPoint location : definition.getWorldPoints())', 'for (WorldPoint location : definition.getWorldPoints().subList(0, 1))',
+     'com.stashledger.StashLedgerPluginTest', 'selectedMapActionOwnsAndClearsEveryLocation'),
 ]
 results = []
 

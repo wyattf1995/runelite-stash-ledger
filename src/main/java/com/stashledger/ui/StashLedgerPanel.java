@@ -228,7 +228,7 @@ public final class StashLedgerPanel extends PluginPanel
         panel.setBackground(SURFACE);
         panel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(BORDER),
             BorderFactory.createEmptyBorder(9, 10, 9, 10)));
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 86));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.WEST;
         constraints.gridx = 0;
@@ -252,6 +252,7 @@ public final class StashLedgerPanel extends PluginPanel
         constraints.insets = new Insets(0, 0, 0, 0);
         stockCaption.setForeground(MUTED);
         stockCaption.setFont(stockCaption.getFont().deriveFont(11f));
+        stockCaption.getAccessibleContext().setAccessibleName("STASH contents status counts");
         panel.add(stockCaption, constraints);
         return panel;
     }
@@ -380,8 +381,9 @@ public final class StashLedgerPanel extends PluginPanel
         int unknown = built - filled - empty;
         builtValue.setText(loggedIn ? built + " / " + entries.size() : "—");
         stockCaption.setText(loggedIn
-            ? filled + " stocked  •  " + empty + " empty  •  " + unknown + " contents unknown"
-            : "Contents are never inferred from construction.");
+            ? "<html><div style='width:168px'>" + filled + " stocked • " + empty + " empty<br>"
+                + unknown + " contents unknown</div></html>"
+            : "<html><div style='width:168px'>Contents are never inferred from construction.</div></html>");
     }
 
     private void updateStatusText()

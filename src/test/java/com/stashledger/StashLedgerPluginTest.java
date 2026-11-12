@@ -165,6 +165,26 @@ public class StashLedgerPluginTest
         assertEquals(ContentsStatus.EMPTY, state.snapshot().get(0).getContentsStatus());
     }
 
+    @Test public void unmatchedNoticeboardRowCannotPartiallyReplaceSavedContents() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        LedgerState state = (LedgerState) get("state");
+        Map<String, BuildStatus> builds = new HashMap<>();
+        catalog.getDefinitions().forEach(definition -> builds.put(definition.getId(), BuildStatus.BUILT));
+        state.applyBuildScan(builds);
+        String savedId = catalog.getDefinitions().get(0).getId();
+        state.markContents(savedId, ContentsStatus.FILLED);
+        String saved = state.serialize();
+        installEmptyBoard(catalog);
+        installUnknownBeginnerBoard();
+        set("constructionReady", true);
+
+        assertEquals(false, call("syncWatsonBoard"));
+
+        assertEquals("A failed board must preserve every prior contents observation", saved, state.serialize());
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+    }
+
     @Test public void staleMapCallbackCannotCrossAccountEpoch() throws Exception
     {
         Class<?> type = Class.forName("com.stashledger.StashLedgerPlugin$PanelActions");
@@ -596,6 +616,16 @@ public class StashLedgerPluginTest
             when(root.getChildren()).thenReturn(children.toArray(new Widget[0]));
             when(client.getWidget(493, 4 + tier.ordinal() * 2)).thenReturn(root);
         }
+    }
+
+    private void installUnknownBeginnerBoard()
+    {
+        Widget label = mock(Widget.class);
+        when(label.getType()).thenReturn(4);
+        when(label.getText()).thenReturn("<col=ff00ff>not a STASH\nlabel</col>");
+        Widget root = mock(Widget.class);
+        when(root.getChildren()).thenReturn(new Widget[] { label });
+        when(client.getWidget(493, 4)).thenReturn(root);
     }
 
     private void verifyNoInteractionsExceptProfileReads()

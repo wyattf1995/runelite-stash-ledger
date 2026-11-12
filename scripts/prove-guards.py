@@ -17,7 +17,7 @@ OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
     ('watson-board-labels', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
      '.put("centre of canifis", "CENTRE_OF_CANIFIS")', '.put("canifis", "CENTRE_OF_CANIFIS")',
-     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119WithActualParenthesizedBoardNamesAndTierCollisions'),
+     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119AgainstPinnedNoticeboardLabelFixture'),
     ('fill-sidebar-action', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
      'else if (eligible) actions.fillStash(id);', 'else if (eligible) { /* source-only negative proof */ }',
      'com.stashledger.ui.StashLedgerPanelTest', 'fillThisStashSelectsOnlyAConfirmedBuiltEmptyCard'),

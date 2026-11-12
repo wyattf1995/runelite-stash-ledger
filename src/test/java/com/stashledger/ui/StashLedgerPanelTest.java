@@ -354,21 +354,45 @@ public class StashLedgerPanelTest
     }
 
     @Test
-    public void fillBannerAndControlFitAtTheRuneLiteSidebarWidth() throws Exception
+    public void fillBannerAndStopControlHaveVerticalRoomForLongStatusAtRuneLiteSidebarWidth() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
             StashEntry longTitle = entry("CANIFIS", "Auburys Shop In Varrock", StashTier.MASTER,
                 BuildStatus.BUILT, ContentsStatus.EMPTY, false);
             panel.update(Arrays.asList(longTitle), "Demo account", true, "CANIFIS");
+            panel.setStatusMessage("Fill mode selected. Enable Highlight needed items in settings.");
             panel.setSize(new Dimension(225, 680));
             layoutTree(panel);
             JScrollPane scrollPane = find(panel, JScrollPane.class);
             JLabel banner = findLabelContaining(panel, "Filling: Auburys");
+            AbstractButton stop = findAccessibleButton(panel, "Stop filling selected STASH");
             assertDetailTextFits(banner);
             assertInsideViewport(panel, scrollPane, banner);
-            assertInsideViewport(panel, scrollPane, findAccessibleButton(panel, "Stop filling selected STASH"));
+            assertInsideViewport(panel, scrollPane, stop);
+            assertTrue("The fill banner must receive a visible height", banner.getHeight() > 0);
+            assertTrue("The stop control must receive a visible height", stop.getHeight() > 0);
+            assertTrue("The stop control must follow the complete fill banner",
+                banner.getY() + banner.getHeight() <= stop.getY());
+            assertTrue("The status row must contain the complete stop control",
+                stop.getY() + stop.getHeight() <= stop.getParent().getHeight());
             assertEquals(-1, FontManager.getRunescapeFont().canDisplayUpTo("Fill this STASHStop fillingFilling:"));
+            BufferedImage image = new BufferedImage(450, 1360, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics = image.createGraphics();
+            graphics.scale(2, 2);
+            panel.paint(graphics);
+            graphics.dispose();
+            try
+            {
+                File target = new File("build/ui/stash-ledger-fill.png");
+                target.getParentFile().mkdirs();
+                ImageIO.write(image, "png", target);
+            }
+            catch (Exception exception)
+            {
+                throw new AssertionError("Could not write selected-fill sidebar evidence", exception);
+            }
         });
+        assertTrue(new File("build/ui/stash-ledger-fill.png").isFile());
     }
 
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,

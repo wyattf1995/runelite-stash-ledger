@@ -15,6 +15,13 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
+    ('watson-line-breaks', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'value.replaceAll("(?i)<br\\\\s*/?>", " ")', 'value', 'com.stashledger.tracking.WatsonBoardParserTest', 'normalizesKnownLineBreakMarkupWithoutJoiningLocationWords'),
+    ('watson-no-partial-commit', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'return failure(tierValues.failure, tier, tierValues.diagnostic);', 'return new Result(Failure.NONE, null, "source-only incomplete proof", Collections.unmodifiableMap(parsed));', 'com.stashledger.StashLedgerPluginTest', 'unmatchedNoticeboardRowCannotPartiallyReplaceSavedContents'),
+    ('watson-bounded-diagnostic', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'bounded(row.location)', 'row.location', 'com.stashledger.tracking.WatsonBoardParserTest', 'detailedUnknownDiagnosticIsSanitizedAndBounded'),
+    ('watson-retry-detail', 'src/main/java/com/stashledger/StashLedgerPlugin.java', ': latestBoardDiagnostic + " Saved contents are unchanged.";', ': "Noticeboard could not be matched completely. Saved contents are unchanged.";', 'com.stashledger.StashLedgerPluginTest', 'finalNoticeboardRetryExplainsTheFailureWithoutChangingSavedContents'),
+    ('watson-new-board-detail', 'src/main/java/com/stashledger/StashLedgerPlugin.java', 'boardAttempts = 0;\n            latestBoardDiagnostic = null;\n            requestScan();', 'boardAttempts = 0;\n            requestScan();', 'com.stashledger.StashLedgerPluginTest', 'noticeboardDiagnosticsClearForANewBoardAndAccount'),
+    ('watson-save-detail', 'src/main/java/com/stashledger/StashLedgerPlugin.java', '"Contents sync is disabled because saved data could not be read."', '"Noticeboard could not be matched completely."', 'com.stashledger.StashLedgerPluginTest', 'finalNoticeboardRetryReportsUnreadableSaveInsteadOfAStaleBoardFailure'),
+    ('watson-construction-detail', 'src/main/java/com/stashledger/StashLedgerPlugin.java', '"Construction scan is incomplete. Use Refresh to try again."', '"Noticeboard could not be matched completely."', 'com.stashledger.StashLedgerPluginTest', 'finalNoticeboardRetryReportsConstructionScanInsteadOfAStaleBoardFailure'),
     ('dot-tier-mode', 'src/main/java/com/stashledger/items/StashNeededItemOverlay.java',
      'if (config.dotColorMode() != DotColorMode.CLUE_TIER || tiers.isEmpty())', 'if (true)',
      'com.stashledger.items.StashNeededItemOverlayTest', 'tierDotsUseOneDistinctConfiguredColorPerTierInEnumOrder'),

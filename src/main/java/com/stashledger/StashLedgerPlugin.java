@@ -9,6 +9,7 @@ import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashEntry;
+import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
 import com.stashledger.state.LedgerState;
 import com.stashledger.tracking.BuildScanner;
@@ -51,6 +52,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.LinkBrowser;
@@ -79,6 +81,7 @@ public class StashLedgerPlugin extends Plugin
     @Inject private StashLedgerConfig config;
     @Inject private ItemManager itemManager;
     @Inject private OverlayManager overlayManager;
+    @Inject private TooltipManager tooltipManager;
 
     private StashCatalog catalog;
     private LedgerState state;
@@ -88,6 +91,8 @@ public class StashLedgerPlugin extends Plugin
     private StashMapMarkers overviewMarkers;
     private NeededItemProvider neededItems;
     private StashNeededItemOverlay itemOverlay;
+    // Client-thread-only, ephemeral selection. Never persisted as account contents.
+    private String fillStashId;
     private final StashInteractionTracker interactions = new StashInteractionTracker(30);
     private int interactionWorldView = -1;
     private String profile;
@@ -123,11 +128,12 @@ public class StashLedgerPlugin extends Plugin
     private void initializeClientState(long currentLifecycle)
     {
         if (currentLifecycle != lifecycle) { return; }
+        fillStashId = null;
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
         overviewMarkers = new StashMapMarkers(mapPoints);
         neededItems = new NeededItemProvider(itemManager, catalog.getItemRequirementIds());
-        itemOverlay = new StashNeededItemOverlay(neededItems);
+        itemOverlay = new StashNeededItemOverlay(neededItems, client, itemManager, tooltipManager, config);
         overlayManager.add(itemOverlay);
         running = true;
         if (currentLifecycle != lifecycle) { running = false; return; }
@@ -168,6 +174,7 @@ public class StashLedgerPlugin extends Plugin
 
     private void clearClientState()
     {
+        fillStashId = null;
         clearSelectedMarkers();
         if (overviewMarkers != null) { overviewMarkers.clear(); }
         if (neededItems != null) { neededItems.clear(); }
@@ -376,6 +383,7 @@ public class StashLedgerPlugin extends Plugin
 
     private void clearAccount()
     {
+        fillStashId = null;
         interactions.clear();
         if (neededItems != null) { neededItems.clear(); }
         ++accountEpoch;
@@ -463,24 +471,37 @@ public class StashLedgerPlugin extends Plugin
         List<StashEntry> snapshot = state.snapshot();
         boolean loggedIn = profile != null && client.getGameState() == GameState.LOGGED_IN
             && Objects.equals(profile, configManager.getRSProfileKey());
+        if (fillStashId != null && (!loggedIn || !canFillStash(fillStashId, snapshot)))
+        {
+            fillStashId = null;
+        }
         if (overviewMarkers != null)
         {
             overviewMarkers.refresh(snapshot, loggedIn && config.showAllMapMarkers(), config.hideFilledMapMarkers());
         }
         if (neededItems != null)
         {
-            if (loggedIn && config.highlightItems()) { neededItems.refresh(snapshot); }
+            if (loggedIn && config.highlightItems()) { neededItems.refresh(snapshot, fillStashId); }
             else { neededItems.clear(); }
         }
         String name = loggedIn && client.getLocalPlayer() != null ? client.getLocalPlayer().getName() : "";
-        String status = message;
+        String activeFillStashId = fillStashId;
+        String status = activeFillStashId != null && !config.highlightItems()
+            ? "Fill mode selected. Enable Highlight needed items in settings." : message;
         SwingUtilities.invokeLater(() ->
         {
             if (!running || currentLifecycle != lifecycle || panel == null) { return; }
             displayedEpoch = epoch;
-            panel.update(snapshot, name, loggedIn);
+            panel.update(snapshot, name, loggedIn, activeFillStashId);
             panel.setStatusMessage(status);
         });
+    }
+
+    private static boolean canFillStash(String id, List<StashEntry> snapshot)
+    {
+        return id != null && snapshot.stream().anyMatch(entry -> id.equals(entry.getDefinition().getId())
+            && entry.getBuildStatus() == BuildStatus.BUILT
+            && entry.getContentsStatus() == ContentsStatus.EMPTY);
     }
 
     private void accountAction(Runnable action)
@@ -500,6 +521,23 @@ public class StashLedgerPlugin extends Plugin
 
     private final class PanelActions implements StashLedgerPanel.Actions
     {
+        @Override public void fillStash(String id)
+        {
+            accountAction(() ->
+            {
+                if (!canFillStash(id, state.snapshot())) { return; }
+                fillStashId = id;
+                message = "Fill mode selected. Gather the highlighted items; contents update after confirmation.";
+            });
+        }
+        @Override public void clearFillStash()
+        {
+            accountAction(() ->
+            {
+                fillStashId = null;
+                message = "Fill mode ended. Showing items for all unfinished STASH units.";
+            });
+        }
         @Override public void togglePinned(String id) { accountAction(() -> state.togglePinned(id)); }
         @Override public void markContents(String id, ContentsStatus status)
         {

@@ -386,7 +386,6 @@ public final class StashLedgerPanel extends PluginPanel
         row.add(fillBanner);
         row.add(Box.createVerticalStrut(3));
         row.add(clearFillButton);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
         return row;
     }
 

@@ -1,4 +1,48 @@
-# Candidate validation
+# Version 0.1.1 validation
+
+Validated on 2026-11-11 local (2026-11-12 UTC) against RuneLite 1.13.6.
+Executable and test candidate: `3fee9c790ccbe55cf539df481cae4cb249c69141`.
+Subsequent documentation commits do not change executable inputs.
+
+- 96 Java tests passed, with zero failures, errors or skips. Six Python catalog
+  tests passed. Java 17 built Java 11 bytecode.
+- All 35 named source-only regression proofs failed when their guard was removed
+  and passed after exact byte restoration. Each source hash was checked against
+  the candidate commit. The final complete suite ran again after all proofs.
+- New coverage verifies single-STASH eligibility and account boundaries, queued
+  stale clicks, completion/logout cleanup, destination deduplication across item
+  variants, real outline pixels, hover menu/drag/pointer restrictions, bounded
+  hover details, and sidebar selection/stop callbacks.
+- Both plugin and runnable JARs built; the runnable JAR passed headless launcher
+  help with assertions enabled. Packaged notices and plugin metadata match source.
+- The actual Swing sidebar rendered at 225px width in its normal and selected
+  fill states. The longest real catalog name and full fill instructions fit,
+  including the Stop control. Both final renders were visually inspected.
+
+A speculative status-height change was withdrawn after two actual negative
+checks disproved the concern. The stronger preferred-height and containment test
+remains; the unsupported mutation was removed with an explicit commit reason.
+No test assertions were weakened. Those first two runs were not release passes.
+
+Verified fleet ticket: `vps-f17c10edb8264cdaa53ce2ab62ed3a35`.
+The exported source receipt, artifact hashes and completed archive/retirement
+were checked. Source and guarding tests are in separate commits.
+
+```text
+e7cc5f17cd44e9873678c03958080603049f7ed6fa09c0ead2d57e3f03e8eb45  stash-ledger-0.1.1.jar
+53e187c3098aa0105e1f5cfa93723ae92655d8acb8345afff4b249b51cba03de  stash-ledger-0.1.1-all.jar
+```
+
+Version 0.1.1's Plugin Hub review and official distribution are pending. The
+new bank outlines, hover and fill mode have automated coverage; a live in-game
+bank/contents/account-switch pilot has not been performed. Existing live checks
+listed below apply to the earlier candidate only.
+
+![Selected fill mode with demo progress](fill-mode-preview.png)
+
+---
+
+# Version 0.1.0 historical validation
 
 Validated 2026-11-11 against RuneLite 1.13.6. Official Plugin Hub distribution
 was verified on 2026-11-12 UTC after the submission was merged.

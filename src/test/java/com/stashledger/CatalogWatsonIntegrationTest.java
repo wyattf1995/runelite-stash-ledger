@@ -18,17 +18,26 @@ public class CatalogWatsonIntegrationTest
         StashCatalog catalog = new StashCatalog();
         Map<StashTier, Map<String, String>> aliases = new EnumMap<>(StashTier.class);
         Map<StashTier, List<WatsonBoardParser.Cell>> board = new EnumMap<>(StashTier.class);
+        assertEquals("CENTRE_OF_CANIFIS", catalog.getWatsonAliases(StashTier.MEDIUM).get("centre of canifis"));
+        assertEquals("EAST_OF_THE_BARBARIAN_VILLAGE_BRIDGE",
+            catalog.getWatsonAliases(StashTier.MEDIUM).get("east of the barbarian village bridge"));
+        assertEquals("GNOME_STRONGHOLD_BALANCING_ROPE",
+            catalog.getWatsonAliases(StashTier.MEDIUM).get("gnome stronghold balancing rope"));
+        assertEquals("OUTSIDE_YANILLE_BANK",
+            catalog.getWatsonAliases(StashTier.MEDIUM).get("outside yanille bank"));
+        assertEquals("BARBARIAN_OUTPOST_OBSTACLE_COURSE",
+            catalog.getWatsonAliases(StashTier.MEDIUM).get("barbarian outpost obstacle course"));
+        assertEquals("WARRIORS_GUILD_BANK",
+            catalog.getWatsonAliases(StashTier.ELITE).get("warriors guild bank"));
+        assertEquals("WARRIORS_GUILD_BANK_29047",
+            catalog.getWatsonAliases(StashTier.MASTER).get("warriors guild bank"));
         for (StashTier tier : StashTier.values())
         {
             aliases.put(tier, catalog.getWatsonAliases(tier));
             List<WatsonBoardParser.Cell> cells = new ArrayList<>();
             for (Map.Entry<String, String> entry : aliases.get(tier).entrySet())
             {
-                String name = entry.getKey();
-                if (name.equals("fishing guild outside")) { name = "Fishing Guild (Outside)"; }
-                if (name.equals("trollheim mountain top")) { name = "Trollheim Mountain (top)"; }
-                if (name.equals("trollheim mountain halfway")) { name = "Trollheim Mountain (half-way)"; }
-                if (name.equals("warriors guild bank")) { name = "Warriors’ Guild bank"; }
+                String name = "(" + entry.getKey() + ")";
                 cells.add(new WatsonBoardParser.Cell(4, name));
                 cells.add(new WatsonBoardParser.Cell(5, null));
                 if (tier != StashTier.MASTER) { cells.add(new WatsonBoardParser.Cell(5, null)); }

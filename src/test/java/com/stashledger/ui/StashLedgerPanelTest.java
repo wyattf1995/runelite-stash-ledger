@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.stashledger.data.StashCatalog;
 import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
@@ -357,20 +358,30 @@ public class StashLedgerPanelTest
     public void fillBannerAndStopControlHaveVerticalRoomForLongStatusAtRuneLiteSidebarWidth() throws Exception
     {
         SwingUtilities.invokeAndWait(() -> {
-            StashEntry longTitle = entry("CANIFIS", "Auburys Shop In Varrock", StashTier.MASTER,
-                BuildStatus.BUILT, ContentsStatus.EMPTY, false);
-            panel.update(Arrays.asList(longTitle), "Demo account", true, "CANIFIS");
-            panel.setStatusMessage("Fill mode selected. Enable Highlight needed items in settings.");
+            StashDefinition definition = new StashCatalog().getById("SOUTH_OF_THE_SHRINE_IN_TAI_BWO_WANNAI_VILLAGE");
+            StashEntry longTitle = new StashEntry(definition, BuildStatus.BUILT, ContentsStatus.EMPTY, false);
+            panel.update(Arrays.asList(longTitle), "Demo account", true, definition.getId());
+            panel.setStatusMessage("Fill mode selected. Gather the highlighted items; contents update after confirmation.");
             panel.setSize(new Dimension(225, 680));
             layoutTree(panel);
             JScrollPane scrollPane = find(panel, JScrollPane.class);
-            JLabel banner = findLabelContaining(panel, "Filling: Auburys");
+            JLabel status = findLabelContaining(panel, "Fill mode selected. Gather");
+            JLabel banner = findLabelContaining(panel, "Filling: South Of The Shrine");
             AbstractButton stop = findAccessibleButton(panel, "Stop filling selected STASH");
             assertDetailTextFits(banner);
             assertInsideViewport(panel, scrollPane, banner);
             assertInsideViewport(panel, scrollPane, stop);
-            assertTrue("The fill banner must receive a visible height", banner.getHeight() > 0);
-            assertTrue("The stop control must receive a visible height", stop.getHeight() > 0);
+            assertTrue("The fill status must receive its preferred height (actual=" + status.getHeight()
+                + ", preferred=" + status.getPreferredSize().height + ")",
+                status.getHeight() >= status.getPreferredSize().height);
+            assertTrue("The fill banner must receive its preferred height (actual=" + banner.getHeight()
+                + ", preferred=" + banner.getPreferredSize().height + ")",
+                banner.getHeight() >= banner.getPreferredSize().height);
+            assertTrue("The stop control must receive its preferred height (actual=" + stop.getHeight()
+                + ", preferred=" + stop.getPreferredSize().height + ")",
+                stop.getHeight() >= stop.getPreferredSize().height);
+            assertTrue("The complete status must precede the fill banner",
+                status.getY() + status.getHeight() <= banner.getY());
             assertTrue("The stop control must follow the complete fill banner",
                 banner.getY() + banner.getHeight() <= stop.getY());
             assertTrue("The status row must contain the complete stop control",

@@ -7,7 +7,7 @@ python3 scripts/prove-watson-generator.py
 ./gradlew --no-daemon --max-workers=2 test
 python3 scripts/prove-guards.py
 ./gradlew --no-daemon --max-workers=2 cleanTest test jar shadowJar
-timeout 30s java -ea -Djava.awt.headless=true -jar build/libs/stash-ledger-0.1.2-all.jar --help > build/validation/launcher-help.log 2>&1
+timeout 30s java -ea -Djava.awt.headless=true -jar build/libs/stash-ledger-0.1.3-all.jar --help > build/validation/launcher-help.log 2>&1
 python3 - <<'PY'
 import hashlib, json, pathlib, zipfile, xml.etree.ElementTree as ET
 root = pathlib.Path('.')

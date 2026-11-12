@@ -16,6 +16,7 @@ import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
 import com.stashledger.model.StashEntry;
 import com.stashledger.model.StashTier;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -195,11 +196,195 @@ public class StashNeededItemOverlayTest
         assertTrue(text.contains("+1 more locations"));
     }
 
+    @Test
+    public void tierDotsUseOneDistinctConfiguredColorPerTierInEnumOrder()
+    {
+        Color beginner = new Color(11, 21, 31);
+        Color easy = new Color(41, 51, 61);
+        Color hard = new Color(71, 81, 91);
+        StashLedgerConfig config = tierConfig();
+        when(config.beginnerDotColor()).thenReturn(beginner);
+        when(config.easyDotColor()).thenReturn(easy);
+        when(config.hardDotColor()).thenReturn(hard);
+        NeededItemDetail detail = new NeededItemDetail(42, List.of(
+            entry("Hard", StashTier.HARD, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Easy", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Another easy", StashTier.EASY, BuildStatus.UNKNOWN, ContentsStatus.UNKNOWN),
+            entry("Beginner", StashTier.BEGINNER, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN)), false);
+        StashNeededItemOverlay overlay = overlay(detail, config);
+
+        BufferedImage image = renderImage(overlay, 42, new Rectangle(4, 4, 24, 24));
+
+        assertEquals(List.of(StashTier.BEGINNER, StashTier.EASY, StashTier.HARD), detail.getTiers());
+        assertEquals("Dots are ordered by tier instead of input or map order", List.of(beginner, easy, hard),
+            dotColors(image, new Rectangle(4, 4, 24, 24)));
+    }
+
+    @Test
+    public void singleColorModeShowsOneConfiguredDotForAllRelevantTiers()
+    {
+        Color single = new Color(101, 111, 121);
+        StashLedgerConfig config = tierConfig();
+        when(config.dotColorMode()).thenReturn(DotColorMode.SINGLE_COLOR);
+        when(config.singleDotColor()).thenReturn(single);
+        NeededItemDetail detail = new NeededItemDetail(42, List.of(
+            entry("Easy", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Master", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
+
+        BufferedImage image = renderImage(overlay(detail, config), 42, new Rectangle(4, 4, 24, 24));
+
+        assertEquals(List.of(single), dotColors(image, new Rectangle(4, 4, 24, 24)));
+    }
+
+    @Test
+    public void tierDotColorsReadTheCurrentConfigurationOnEveryRender()
+    {
+        Color first = new Color(23, 33, 43);
+        Color changed = new Color(53, 63, 73);
+        StashLedgerConfig config = tierConfig();
+        when(config.easyDotColor()).thenReturn(first);
+        NeededItemDetail detail = new NeededItemDetail(42, List.of(
+            entry("Easy", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
+        StashNeededItemOverlay overlay = overlay(detail, config);
+        Rectangle bounds = new Rectangle(4, 4, 24, 24);
+
+        assertEquals(List.of(first), dotColors(renderImage(overlay, 42, bounds), bounds));
+        when(config.easyDotColor()).thenReturn(changed);
+        assertEquals(List.of(changed), dotColors(renderImage(overlay, 42, bounds), bounds));
+    }
+
+    @Test
+    public void sixTierDotsFitWithinTheItemBoundsWithoutSharingPixels()
+    {
+        StashLedgerConfig config = tierConfig();
+        Color[] colors = {new Color(10, 20, 30), new Color(40, 50, 60), new Color(70, 80, 90),
+            new Color(100, 110, 120), new Color(130, 140, 150), new Color(160, 170, 180)};
+        when(config.beginnerDotColor()).thenReturn(colors[0]);
+        when(config.easyDotColor()).thenReturn(colors[1]);
+        when(config.mediumDotColor()).thenReturn(colors[2]);
+        when(config.hardDotColor()).thenReturn(colors[3]);
+        when(config.eliteDotColor()).thenReturn(colors[4]);
+        when(config.masterDotColor()).thenReturn(colors[5]);
+        NeededItemDetail detail = new NeededItemDetail(42, List.of(
+            entry("B", StashTier.BEGINNER, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("E", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("M", StashTier.MEDIUM, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("H", StashTier.HARD, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("L", StashTier.ELITE, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("X", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
+        Rectangle bounds = new Rectangle(4, 4, 24, 24);
+
+        BufferedImage image = renderImage(overlay(detail, config), 42, bounds);
+
+        assertEquals(List.of(colors), dotColors(image, bounds));
+        assertNoColorOutside(image, bounds, List.of(colors));
+    }
+
+    @Test
+    public void itemWithoutDetailAndTinyBoundsNeverPaintTierDots()
+    {
+        StashLedgerConfig config = tierConfig();
+        StashNeededItemOverlay overlay = new StashNeededItemOverlay(itemId -> itemId == 42,
+            mock(Client.class), mock(ItemManager.class), mock(TooltipManager.class), config);
+
+        BufferedImage unrelated = renderImage(overlay, 99, new Rectangle(4, 4, 24, 24));
+        BufferedImage tiny = renderImage(overlay, 42, new Rectangle(4, 4, 2, 2));
+
+        assertEquals(0, paintedPixels(unrelated));
+        assertEquals(0, paintedPixels(tiny));
+    }
+
+    @Test
+    public void tooltipListsAllDotTiersEvenWhenLocationsAreCapped()
+    {
+        NeededItemDetail detail = new NeededItemDetail(42, List.of(
+            entry("One", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Two", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Three", StashTier.EASY, BuildStatus.UNKNOWN, ContentsStatus.UNKNOWN),
+            entry("Four", StashTier.MASTER, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN),
+            entry("Five", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Six", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Seven", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
+
+        String text = StashNeededItemOverlay.tooltipText(detail);
+
+        assertTrue(text.contains("Tiers: Easy, Master"));
+        assertTrue(text.contains("+1 more locations"));
+    }
+
     private static void render(StashNeededItemOverlay overlay, int itemId, WidgetItem item)
     {
         Graphics2D graphics = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB).createGraphics();
         try { overlay.renderItemOverlay(graphics, itemId, item); }
         finally { graphics.dispose(); }
+    }
+
+    private static StashNeededItemOverlay overlay(NeededItemDetail detail, StashLedgerConfig config)
+    {
+        NeededItemLookup lookup = new NeededItemLookup()
+        {
+            @Override public boolean isNeeded(int itemId) { return itemId == 42; }
+            @Override public java.util.Optional<NeededItemDetail> detailFor(int itemId)
+            {
+                return itemId == 42 ? java.util.Optional.of(detail) : java.util.Optional.empty();
+            }
+        };
+        return new StashNeededItemOverlay(lookup, mock(Client.class), mock(ItemManager.class), mock(TooltipManager.class), config);
+    }
+
+    private static BufferedImage renderImage(StashNeededItemOverlay overlay, int itemId, Rectangle bounds)
+    {
+        BufferedImage image = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        try { overlay.renderItemOverlay(graphics, itemId, new WidgetItem(itemId, 1, bounds, null, null)); }
+        finally { graphics.dispose(); }
+        return image;
+    }
+
+    private static StashLedgerConfig tierConfig()
+    {
+        StashLedgerConfig config = config(ItemHighlightStyle.DOT, false);
+        when(config.dotColorMode()).thenReturn(DotColorMode.CLUE_TIER);
+        return config;
+    }
+
+    private static List<Color> dotColors(BufferedImage image, Rectangle bounds)
+    {
+        java.util.LinkedHashSet<Integer> values = new java.util.LinkedHashSet<>();
+        for (int y = bounds.y; y < bounds.y + bounds.height; y++)
+        {
+            for (int x = bounds.x; x < bounds.x + bounds.width; x++)
+            {
+                int value = image.getRGB(x, y);
+                if ((value >>> 24) != 0) { values.add(value); }
+            }
+        }
+        return values.stream().map(Color::new).collect(java.util.stream.Collectors.toList());
+    }
+
+    private static void assertNoColorOutside(BufferedImage image, Rectangle bounds, List<Color> colors)
+    {
+        java.util.Set<Integer> values = colors.stream().map(Color::getRGB).collect(java.util.stream.Collectors.toSet());
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                if (!bounds.contains(x, y)) { assertFalse(values.contains(image.getRGB(x, y))); }
+            }
+        }
+    }
+
+    private static int paintedPixels(BufferedImage image)
+    {
+        int count = 0;
+        for (int y = 0; y < image.getHeight(); y++)
+        {
+            for (int x = 0; x < image.getWidth(); x++)
+            {
+                if ((image.getRGB(x, y) >>> 24) != 0) { count++; }
+            }
+        }
+        return count;
     }
 
     private static StashLedgerConfig config(ItemHighlightStyle style, boolean details)

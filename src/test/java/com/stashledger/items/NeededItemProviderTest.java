@@ -143,6 +143,22 @@ public class NeededItemProviderTest
     }
 
     @Test
+    public void dotTiersOnlyDescribeDestinationsThatRemainEligibleForTheItem()
+    {
+        NeededItemProvider provider = new NeededItemProvider(id -> id,
+            Map.of("filled", Set.of(44), "easy", Set.of(44), "master", Set.of(44)));
+        StashEntry filled = tierEntry("filled", StashTier.BEGINNER, BuildStatus.BUILT, ContentsStatus.FILLED);
+        StashEntry easy = tierEntry("easy", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY);
+        StashEntry master = tierEntry("master", StashTier.MASTER, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN);
+
+        provider.refresh(List.of(filled, easy, master));
+
+        NeededItemDetail detail = provider.detailFor(44).orElseThrow(AssertionError::new);
+        assertEquals(List.of(easy, master), detail.getStashes());
+        assertEquals(List.of(StashTier.EASY, StashTier.MASTER), detail.getTiers());
+    }
+
+    @Test
     public void canonicalRequirementVariantsListEachDestinationOnlyOnce()
     {
         NeededItemProvider provider = new NeededItemProvider(id -> id == 900 ? 10 : id,
@@ -165,6 +181,11 @@ public class NeededItemProviderTest
 
     private static StashEntry entry(String id, BuildStatus build, ContentsStatus contents)
     {
-        return new StashEntry(new StashDefinition(id, 1, id, StashTier.EASY, 0, 0, 0, List.of()), build, contents, false);
+        return tierEntry(id, StashTier.EASY, build, contents);
+    }
+
+    private static StashEntry tierEntry(String id, StashTier tier, BuildStatus build, ContentsStatus contents)
+    {
+        return new StashEntry(new StashDefinition(id, 1, id, tier, 0, 0, 0, List.of()), build, contents, false);
     }
 }

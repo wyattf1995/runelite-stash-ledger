@@ -228,6 +228,48 @@ public class StashLedgerPluginTest
         assertNull(get("latestBoardDiagnostic"));
     }
 
+    @Test public void finalNoticeboardRetryReportsUnreadableSaveInsteadOfAStaleBoardFailure() throws Exception
+    {
+        set("latestBoardDiagnostic", "Master tier has an unknown location: stale.");
+        set("saveHealthy", false);
+        set("constructionReady", true);
+        set("scanPending", false);
+        set("boardOpen", true);
+        set("boardPending", true);
+        set("boardAttempts", 4);
+
+        plugin.onGameTick(new GameTick());
+
+        String status = String.valueOf(get("message")).toLowerCase(java.util.Locale.ROOT);
+        assertTrue(status.contains("saved data"));
+        assertTrue(status.contains("disabled"));
+        assertFalse(status.contains("master"));
+        assertEquals(false, get("boardPending"));
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+        verify(client, never()).getWidget(anyInt(), anyInt());
+    }
+
+    @Test public void finalNoticeboardRetryReportsConstructionScanInsteadOfAStaleBoardFailure() throws Exception
+    {
+        set("latestBoardDiagnostic", "Master tier has an unknown location: stale.");
+        set("saveHealthy", true);
+        set("constructionReady", false);
+        set("scanPending", false);
+        set("boardOpen", true);
+        set("boardPending", true);
+        set("boardAttempts", 4);
+
+        plugin.onGameTick(new GameTick());
+
+        String status = String.valueOf(get("message")).toLowerCase(java.util.Locale.ROOT);
+        assertTrue(status.contains("construction"));
+        assertTrue(status.contains("refresh"));
+        assertFalse(status.contains("master"));
+        assertEquals(false, get("boardPending"));
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+        verify(client, never()).getWidget(anyInt(), anyInt());
+    }
+
     @Test public void staleMapCallbackCannotCrossAccountEpoch() throws Exception
     {
         Class<?> type = Class.forName("com.stashledger.StashLedgerPlugin$PanelActions");

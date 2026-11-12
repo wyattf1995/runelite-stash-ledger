@@ -39,11 +39,27 @@ e7cc5f17cd44e9873678c03958080603049f7ed6fa09c0ead2d57e3f03e8eb45  stash-ledger-0
 and official Hub build
 [43165622919](https://github.com/runelite/plugin-hub/actions/runs/43165622919) passed.
 All 21 Java source files in the Hub build archive match the pin; its JAR matches
-the CI manifest hash and size. Maintainer review and official distribution are
-still pending. The signed manifest checked at 06:08 UTC still lists 0.1.0. The
-new bank outlines, hover and fill mode have automated coverage; a live in-game
-bank/contents/account-switch pilot has not been performed. Existing live checks
-listed below apply to the earlier candidate only.
+the CI manifest hash and size.
+
+PR 20555 merged at 2026-11-12 07:15:27 UTC as
+`f4061c789fa7bd3f6e83565c85d49574794e3f73`. The
+[production build and upload](https://github.com/runelite/plugin-hub/actions/runs/43173919901)
+succeeded, completing upload at 07:16:22 UTC. At 10:13:24 UTC, the official
+RuneLite 1.13.6 signed manifest listed STASH Ledger 0.1.1. Its RSA/SHA-256
+signature and downloaded JAR hash/size were verified:
+
+```text
+92839bc32532d3ed1acfce7e62acf34569ac8b703a00671c9eac6c40f231a906  published JAR (108735 bytes)
+```
+
+The production CI manifest diff matches that JAR. All 61 archive entries match
+the reviewed build except the generated `runelite_plugin.json` lastUpdatedAt
+value; every compiled class and other resource is identical. Version 0.1.1 is
+now officially distributed through Plugin Hub.
+
+The new bank outlines, hover and fill mode have automated coverage; a live
+in-game bank/contents/account-switch pilot has not been performed. Existing
+live checks listed below apply to the earlier candidate only.
 
 ![Selected fill mode with demo progress](fill-mode-preview.png)
 

@@ -96,12 +96,12 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-Version `0.1.1` adds the item outlines, hover details and selected-STASH mode
-described above. The [update submission](https://github.com/runelite/plugin-hub/pull/20555) has
-passed the Plugin Hub build and is awaiting maintainer review.
-
-Version `0.1.0` is available in RuneLite's Plugin Hub. The
-[submission](https://github.com/runelite/plugin-hub/pull/20516) was merged on
+Version `0.1.1` is available in RuneLite's Plugin Hub, including item outlines,
+hover details and selected-STASH fill mode. The
+[update submission](https://github.com/runelite/plugin-hub/pull/20555) merged on
 2026-11-12 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
-plugin were verified against the reviewed source. A separate development client
-is not required to use the Hub release.
+plugin were verified against the reviewed source. Install or update STASH Ledger
+through RuneLite's Plugin Hub.
+
+The [initial 0.1.0 submission](https://github.com/runelite/plugin-hub/pull/20516)
+is retained in the validation history.

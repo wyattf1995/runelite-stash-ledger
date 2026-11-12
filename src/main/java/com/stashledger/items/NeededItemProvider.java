@@ -3,9 +3,7 @@ package com.stashledger.items;
 import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashEntry;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,7 +20,8 @@ public final class NeededItemProvider implements NeededItemLookup
 {
     private final IntUnaryOperator canonicalize;
     private final Map<String, Set<Integer>> requirementIdsByStash;
-    private volatile Set<Integer> neededIds = Collections.emptySet();
+    /** One volatile reference prevents a render from mixing eligibility and hover detail epochs. */
+    private volatile Map<Integer, NeededItemDetail> detailsByItemId = Map.of();
 
     public NeededItemProvider(ItemManager itemManager, Map<String, Set<Integer>> requirementIdsByStash)
     {
@@ -43,51 +42,75 @@ public final class NeededItemProvider implements NeededItemLookup
     /** Replaces the snapshot atomically; callers may supply any account's full ledger snapshot. */
     public void refresh(List<StashEntry> entries)
     {
-        Set<Integer> next = new HashSet<>();
+        refresh(entries, null);
+    }
+
+    /**
+     * Replaces the snapshot atomically. A focus ID intentionally narrows the
+     * plan to exactly one built, confirmed-empty unit; an invalid focus means
+     * no candidates rather than an ambiguous return to the global plan.
+     */
+    public void refresh(List<StashEntry> entries, String fillStashId)
+    {
+        Map<Integer, List<StashEntry>> entriesByItemId = new HashMap<>();
+        boolean focused = fillStashId != null;
         if (entries != null)
         {
             for (StashEntry entry : entries)
             {
-                if (entry == null || isComplete(entry))
+                if (entry == null || (focused ? !isFillableFocus(entry, fillStashId) : isComplete(entry)))
                 {
                     continue;
                 }
                 for (int requirementId : requirementIdsByStash.getOrDefault(entry.getDefinition().getId(), Set.of()))
                 {
-                    next.add(canonicalize.applyAsInt(requirementId));
+                    int canonicalId = canonicalize.applyAsInt(requirementId);
+                    entriesByItemId.computeIfAbsent(canonicalId, unused -> new java.util.ArrayList<>()).add(entry);
                 }
             }
         }
-        neededIds = Collections.unmodifiableSet(next);
+        Map<Integer, NeededItemDetail> next = new HashMap<>();
+        for (Map.Entry<Integer, List<StashEntry>> entry : entriesByItemId.entrySet())
+        {
+            next.put(entry.getKey(), new NeededItemDetail(entry.getKey(), entry.getValue(), focused));
+        }
+        detailsByItemId = Map.copyOf(next);
     }
 
     public void clear()
     {
-        neededIds = Collections.emptySet();
+        detailsByItemId = Map.of();
     }
 
     @Override
     public boolean isNeeded(int itemId)
     {
-        Set<Integer> snapshot = neededIds;
-        return !snapshot.isEmpty() && snapshot.contains(canonicalize.applyAsInt(itemId));
+        Map<Integer, NeededItemDetail> snapshot = detailsByItemId;
+        return !snapshot.isEmpty() && snapshot.containsKey(canonicalize.applyAsInt(itemId));
     }
 
+    @Override
     public Optional<NeededItemDetail> detailFor(int itemId)
     {
-        if (neededIds.isEmpty())
+        Map<Integer, NeededItemDetail> snapshot = detailsByItemId;
+        if (snapshot.isEmpty())
         {
             return Optional.empty();
         }
         int canonicalId = canonicalize.applyAsInt(itemId);
-        return neededIds.contains(canonicalId)
-            ? Optional.of(new NeededItemDetail(canonicalId))
-            : Optional.empty();
+        return Optional.ofNullable(snapshot.get(canonicalId));
     }
 
     private static boolean isComplete(StashEntry entry)
     {
         return entry.getBuildStatus() == BuildStatus.BUILT
             && entry.getContentsStatus() == ContentsStatus.FILLED;
+    }
+
+    private static boolean isFillableFocus(StashEntry entry, String fillStashId)
+    {
+        return fillStashId.equals(entry.getDefinition().getId())
+            && entry.getBuildStatus() == BuildStatus.BUILT
+            && entry.getContentsStatus() == ContentsStatus.EMPTY;
     }
 }

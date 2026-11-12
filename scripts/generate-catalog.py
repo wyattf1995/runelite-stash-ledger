@@ -215,7 +215,13 @@ def parse_watson_aliases(source, identifiers):
         if not match or match.group(1) not in known or not args or not args[0].startswith('"'):
             continue
         stash_id = match.group(1)
-        location = args[1][1:-1] if len(args) > 1 and args[1].startswith('"') else args[0][1:-1]
+        # The three-argument constructor uses the wrapper enum's this.name(),
+        # not its friendly display-name argument or the linked STASHUnit ID.
+        location = args[1][1:-1] if len(args) > 1 and args[1].startswith('"') else entry.group(1)
+        # fromWatsonLocation explicitly resolves these identical board labels
+        # by difficulty; the numeric suffix is not part of the displayed name.
+        if stash_id in {"WARRIORS_GUILD_BANK", "WARRIORS_GUILD_BANK_29047"}:
+            location = "Warriors' Guild bank"
         normalized = normalize_watson_location(location)
         previous = aliases.get(stash_id)
         if previous is not None and previous != normalized:

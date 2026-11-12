@@ -22,7 +22,13 @@ python3 scripts/generate-catalog.py \
 
 The generator rejects a catalog unless it has exactly 119 unique units and every
 unit has at least one exact source-derived equipment restriction and a
-tier-scoped Watson noticeboard location alias. Aliases remove tags and
+tier-scoped Watson noticeboard location alias. The three-argument reference
+constructor derives that label from the wrapper enum identifier (`this.name()`),
+not its friendly display-name argument or its linked RuneLite enum identifier.
+The four-argument constructor supplies an explicit label. The reference's
+`fromWatsonLocation` also maps the identical Warriors' Guild bank label by tier;
+its Master enum suffix is not displayed on the board. These rules are preserved
+by the generator. Aliases remove tags and
 punctuation, lowercase, and fold whitespace; collisions within a tier fail
 generation. Generated data
 uses the installed RuneLite `STASHUnit` enum for object IDs and world points, so

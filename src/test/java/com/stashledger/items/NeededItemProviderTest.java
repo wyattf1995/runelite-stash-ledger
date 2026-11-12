@@ -140,6 +140,21 @@ public class NeededItemProviderTest
         assertEquals(List.of(one, two), detail.getStashes());
     }
 
+    @Test
+    public void canonicalRequirementVariantsListEachDestinationOnlyOnce()
+    {
+        NeededItemProvider provider = new NeededItemProvider(id -> id == 900 ? 10 : id,
+            Map.of("one", Set.of(10, 900), "two", Set.of(10)));
+        StashEntry one = entry("one", BuildStatus.BUILT, ContentsStatus.EMPTY);
+        StashEntry two = entry("two", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN);
+
+        provider.refresh(List.of(one, two));
+
+        assertEquals(List.of(one, two), provider.detailFor(900).orElseThrow(AssertionError::new).getStashes());
+        provider.refresh(List.of(one, two), "one");
+        assertEquals(List.of(one), provider.detailFor(10).orElseThrow(AssertionError::new).getStashes());
+    }
+
     private static NeededItemProvider provider()
     {
         return new NeededItemProvider(id -> id, Map.of(

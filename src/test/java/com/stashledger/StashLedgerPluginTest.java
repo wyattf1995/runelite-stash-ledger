@@ -424,20 +424,25 @@ public class StashLedgerPluginTest
         for (BuildStatus build : List.of(BuildStatus.UNKNOWN, BuildStatus.NOT_BUILT, BuildStatus.BUILT))
         {
             state.applyBuildScan(Map.of(id, build));
+            set("message", "Original status");
             panelActions().fillStash(id);
             drainClientCallbacks();
             assertNull("Unknown contents are never assumed empty", get("fillStashId"));
+            assertEquals("A rejected selection must not announce fill mode", "Original status", get("message"));
         }
         state.markContents(id, ContentsStatus.FILLED);
+        set("message", "Original status");
         panelActions().fillStash(id);
         drainClientCallbacks();
         assertNull(get("fillStashId"));
+        assertEquals("Original status", get("message"));
 
         state.markContents(id, ContentsStatus.EMPTY);
         panelActions().fillStash(id);
         state.markContents(id, ContentsStatus.FILLED);
         drainClientCallbacks();
         assertNull("Eligibility is rechecked after the queued click", get("fillStashId"));
+        assertEquals("A stale click must not announce fill mode", "Original status", get("message"));
     }
 
     @Test public void fillModeEndsWhenSelectedStashIsFilledOrNoLongerKnownBuilt() throws Exception

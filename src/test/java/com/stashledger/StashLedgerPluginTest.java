@@ -42,6 +42,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import org.junit.Before;
@@ -70,6 +71,7 @@ public class StashLedgerPluginTest
         StashCatalog catalog = new StashCatalog();
         set("client", client); set("clientThread", thread); set("configManager", config);
         set("config", new StashLedgerConfig() {});
+        set("tooltipManager", mock(TooltipManager.class));
         set("mapPoints", mock(WorldMapPointManager.class));
         set("catalog", catalog); set("state", new LedgerState(catalog.getDefinitions()));
         set("profile", "account-a"); set("running", true); set("lifecycle", 1L);
@@ -381,6 +383,126 @@ public class StashLedgerPluginTest
         SwingUtilities.invokeAndWait(() -> { });
         assertTrue(visible.isEmpty());
         verifyNoInteractions((ClientToolbar) get("clientToolbar"));
+    }
+
+    @Test public void fillModeRestrictsHighlightsWithoutChangingContentsAndCanBeStopped() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        String first = catalog.getDefinitions().get(0).getId();
+        String second = catalog.getDefinitions().get(1).getId();
+        LedgerState state = (LedgerState) get("state");
+        state.applyBuildScan(Map.of(first, BuildStatus.BUILT, second, BuildStatus.BUILT));
+        state.markContents(first, ContentsStatus.EMPTY);
+        state.markContents(second, ContentsStatus.EMPTY);
+        ItemManager manager = mock(ItemManager.class);
+        when(manager.canonicalize(anyInt())).thenAnswer(invocation -> invocation.getArgument(0));
+        NeededItemProvider items = new NeededItemProvider(manager, Map.of(first, Set.of(10), second, Set.of(20)));
+        set("neededItems", items);
+        String saved = state.serialize();
+
+        panelActions().fillStash(first);
+        drainClientCallbacks();
+
+        assertEquals(first, get("fillStashId"));
+        assertTrue(items.isNeeded(10));
+        assertFalse(items.isNeeded(20));
+        assertEquals("Selecting a target never changes saved contents", saved, state.serialize());
+        assertTrue(items.detailFor(10).orElseThrow().isFocused());
+
+        panelActions().clearFillStash();
+        drainClientCallbacks();
+        assertNull(get("fillStashId"));
+        assertTrue(items.isNeeded(10));
+        assertTrue(items.isNeeded(20));
+        assertEquals(saved, state.serialize());
+    }
+
+    @Test public void fillModeRejectsUnknownUnbuiltFilledAndStaleEligibility() throws Exception
+    {
+        String id = ((StashCatalog) get("catalog")).getDefinitions().get(0).getId();
+        LedgerState state = (LedgerState) get("state");
+        for (BuildStatus build : List.of(BuildStatus.UNKNOWN, BuildStatus.NOT_BUILT, BuildStatus.BUILT))
+        {
+            state.applyBuildScan(Map.of(id, build));
+            panelActions().fillStash(id);
+            drainClientCallbacks();
+            assertNull("Unknown contents are never assumed empty", get("fillStashId"));
+        }
+        state.markContents(id, ContentsStatus.FILLED);
+        panelActions().fillStash(id);
+        drainClientCallbacks();
+        assertNull(get("fillStashId"));
+
+        state.markContents(id, ContentsStatus.EMPTY);
+        panelActions().fillStash(id);
+        state.markContents(id, ContentsStatus.FILLED);
+        drainClientCallbacks();
+        assertNull("Eligibility is rechecked after the queued click", get("fillStashId"));
+    }
+
+    @Test public void fillModeEndsWhenSelectedStashIsFilledOrNoLongerKnownBuilt() throws Exception
+    {
+        String id = ((StashCatalog) get("catalog")).getDefinitions().get(0).getId();
+        LedgerState state = (LedgerState) get("state");
+        state.applyBuildScan(Map.of(id, BuildStatus.BUILT));
+        state.markContents(id, ContentsStatus.EMPTY);
+        panelActions().fillStash(id);
+        drainClientCallbacks();
+        assertEquals(id, get("fillStashId"));
+
+        state.markContents(id, ContentsStatus.FILLED);
+        call("publish");
+        assertNull("Completion must leave selected mode", get("fillStashId"));
+
+        state.markContents(id, ContentsStatus.EMPTY);
+        panelActions().fillStash(id);
+        drainClientCallbacks();
+        state.applyBuildScan(Map.of(id, BuildStatus.UNKNOWN));
+        call("publish");
+        assertNull("A stale build result must leave selected mode", get("fillStashId"));
+    }
+
+    @Test public void fillModeCannotCrossAccountBoundaryAndClearsOnLogout() throws Exception
+    {
+        String id = ((StashCatalog) get("catalog")).getDefinitions().get(0).getId();
+        LedgerState state = (LedgerState) get("state");
+        state.applyBuildScan(Map.of(id, BuildStatus.BUILT));
+        state.markContents(id, ContentsStatus.EMPTY);
+        panelActions().fillStash(id);
+        set("accountEpoch", 4L);
+        drainClientCallbacks();
+        assertNull("Old sidebar callback cannot select for a new session", get("fillStashId"));
+
+        set("displayedEpoch", 4L);
+        panelActions().fillStash(id);
+        when(config.getRSProfileKey()).thenReturn("account-b");
+        drainClientCallbacks();
+        assertNull("Profile identity is checked as well as epoch", get("fillStashId"));
+
+        when(config.getRSProfileKey()).thenReturn("account-a");
+        panelActions().fillStash(id);
+        drainClientCallbacks();
+        assertEquals(id, get("fillStashId"));
+        GameStateChanged event = new GameStateChanged();
+        event.setGameState(GameState.LOGIN_SCREEN);
+        plugin.onGameStateChanged(event);
+        assertNull(get("fillStashId"));
+    }
+
+    @Test public void shutdownClearsFillSelectionOnClientQueue() throws Exception
+    {
+        set("fillStashId", "BOB_AXES_ENTRANCE");
+        plugin.shutDown();
+        drainClientCallbacks();
+        assertNull(get("fillStashId"));
+    }
+
+    private StashLedgerPanel.Actions panelActions() throws Exception
+    {
+        Class<?> type = Class.forName("com.stashledger.StashLedgerPlugin$PanelActions");
+        Constructor<?> constructor = type.getDeclaredConstructor(StashLedgerPlugin.class);
+        constructor.setAccessible(true);
+        return (StashLedgerPanel.Actions) constructor.newInstance(plugin);
     }
 
     private Set<Overlay> installLifecycleDependencies() throws Exception

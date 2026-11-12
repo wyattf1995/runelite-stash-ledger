@@ -15,6 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
+    ('fill-eligibility', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'if (!canFillStash(id, state.snapshot())) { return; }', '',
+     'com.stashledger.StashLedgerPluginTest', 'fillModeRejectsUnknownUnbuiltFilledAndStaleEligibility'),
+    ('fill-invalidation', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'if (fillStashId != null && (!loggedIn || !canFillStash(fillStashId, snapshot)))', 'if (false)',
+     'com.stashledger.StashLedgerPluginTest', 'fillModeEndsWhenSelectedStashIsFilledOrNoLongerKnownBuilt'),
+    ('fill-focus-wiring', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
+     'neededItems.refresh(snapshot, fillStashId)', 'neededItems.refresh(snapshot, null)',
+     'com.stashledger.StashLedgerPluginTest', 'fillModeRestrictsHighlightsWithoutChangingContentsAndCanBeStopped'),
     ('complete-construction', 'src/main/java/com/stashledger/StashLedgerPlugin.java',
      'if (!saveHealthy || !constructionReady)', 'if (!saveHealthy)',
      'com.stashledger.StashLedgerPluginTest', 'incompleteConstructionCannotReportContentsSyncedOrReviveStaleContents'),

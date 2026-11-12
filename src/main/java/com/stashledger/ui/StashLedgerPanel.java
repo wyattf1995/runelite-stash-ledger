@@ -91,6 +91,8 @@ public final class StashLedgerPanel extends PluginPanel
     private final JLabel stockCaption = new JLabel("Contents not scanned");
     private final JLabel resultCount = new JLabel("0 locations");
     private final JLabel statusLabel = new JLabel("Sign in to inspect your STASH units.");
+    private final JLabel fillBanner = new JLabel();
+    private final JButton clearFillButton = compactButton("Stop filling");
     private final JTextField search = new PlaceholderTextField("Search locations or items");
     private final JComboBox<TierOption> tier = new JComboBox<>(TierOption.values());
     private final Map<Filter, JToggleButton> filters = new HashMap<>();
@@ -106,6 +108,7 @@ public final class StashLedgerPanel extends PluginPanel
     private boolean loggedIn;
     private String accountName = "";
     private String statusMessage = "";
+    private String fillStashId;
     private boolean rebuilding;
 
     public StashLedgerPanel(Actions actions)
@@ -149,9 +152,19 @@ public final class StashLedgerPanel extends PluginPanel
 
     public void update(List<StashEntry> snapshot, String newAccountName, boolean newLoggedIn)
     {
+        update(snapshot, newAccountName, newLoggedIn, null);
+    }
+
+    /**
+     * Displays a client-owned, ephemeral focus for one built and confirmed-empty
+     * STASH. The panel only validates and presents the focus; it never changes
+     * contents or stores account state itself.
+     */
+    public void update(List<StashEntry> snapshot, String newAccountName, boolean newLoggedIn, String newFillStashId)
+    {
         if (!SwingUtilities.isEventDispatchThread())
         {
-            SwingUtilities.invokeLater(() -> update(snapshot, newAccountName, newLoggedIn));
+            SwingUtilities.invokeLater(() -> update(snapshot, newAccountName, newLoggedIn, newFillStashId));
             return;
         }
         entries.clear();
@@ -164,7 +177,15 @@ public final class StashLedgerPanel extends PluginPanel
         expandedIds.retainAll(entries.stream().map(entry -> entry.getDefinition().getId()).collect(Collectors.toSet()));
         accountName = newAccountName == null ? "" : newAccountName;
         loggedIn = newLoggedIn;
+        fillStashId = validFillStashId(newFillStashId);
         rebuild();
+    }
+
+    private String validFillStashId(String candidate)
+    {
+        if (!loggedIn || candidate == null || candidate.isEmpty()) return null;
+        return entries.stream().anyMatch(entry -> candidate.equals(entry.getDefinition().getId()) && canFill(entry))
+            ? candidate : null;
     }
 
     public void setStatusMessage(String text)
@@ -354,7 +375,18 @@ public final class StashLedgerPanel extends PluginPanel
         row.add(resultCount);
         row.add(Box.createVerticalStrut(2));
         row.add(statusLabel);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54));
+        fillBanner.setForeground(EMPTY);
+        fillBanner.setFont(fillBanner.getFont().deriveFont(11f));
+        fillBanner.setAlignmentX(Component.LEFT_ALIGNMENT);
+        clearFillButton.setToolTipText("Stop highlighting items for this STASH");
+        clearFillButton.getAccessibleContext().setAccessibleName("Stop filling selected STASH");
+        clearFillButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        clearFillButton.addActionListener(event -> actions.clearFillStash());
+        row.add(Box.createVerticalStrut(4));
+        row.add(fillBanner);
+        row.add(Box.createVerticalStrut(3));
+        row.add(clearFillButton);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
         return row;
     }
 
@@ -380,6 +412,7 @@ public final class StashLedgerPanel extends PluginPanel
         try
         {
             updateSummary();
+            updateFillBanner();
             List<StashEntry> visible = visibleEntries();
             cards.removeAll();
             if (!loggedIn)
@@ -443,6 +476,32 @@ public final class StashLedgerPanel extends PluginPanel
         statusLabel.setToolTipText(displayText(visibleStatus));
     }
 
+    private void updateFillBanner()
+    {
+        StashEntry focused = entryForId(fillStashId);
+        boolean active = focused != null;
+        fillBanner.setVisible(active);
+        clearFillButton.setVisible(active);
+        if (active)
+        {
+            String name = displayText(focused.getDefinition().getName());
+            fillBanner.setText("<html><div style='width:120pt'>Filling: " + escapeHtml(name) + "</div></html>");
+            fillBanner.setToolTipText("Highlighting items for " + name);
+        }
+        else
+        {
+            fillBanner.setText("");
+            fillBanner.setToolTipText(null);
+        }
+    }
+
+    private StashEntry entryForId(String id)
+    {
+        if (id == null) return null;
+        return entries.stream().filter(entry -> id.equals(entry.getDefinition().getId()) && canFill(entry))
+            .findFirst().orElse(null);
+    }
+
     private static String escapeHtml(String value)
     {
         return displayText(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
@@ -457,7 +516,8 @@ public final class StashLedgerPanel extends PluginPanel
             "stocked | empty", "contents unknown", "All", "Not built", "Built", "Unknown", "Filled", "Empty",
             "All clue tiers", "My list", "Hide filled", "Contents", "Stocked", "Unknown", "Empty",
             "Listed", "Map", "Wiki", "To build", "Construction", "Clue items",
-            "Built - stocked", "Built - empty", "Built - contents unknown", "Construction unknown");
+            "Built - stocked", "Built - empty", "Built - contents unknown", "Construction unknown",
+            "Fill this STASH", "Stop filling", "Filling:");
     }
 
     /**
@@ -601,6 +661,8 @@ public final class StashLedgerPanel extends PluginPanel
         detail.add(Box.createVerticalStrut(8));
         detail.add(fullWidth(contentsControls(entry)));
         detail.add(Box.createVerticalStrut(8));
+        detail.add(fullWidth(fillControls(entry)));
+        detail.add(Box.createVerticalStrut(8));
         detail.add(fullWidth(actionRow(entry)));
         return detail;
     }
@@ -717,6 +779,38 @@ public final class StashLedgerPanel extends PluginPanel
         row.add(map);
         row.add(wiki);
         return row;
+    }
+
+    private JButton fillControls(StashEntry entry)
+    {
+        String id = entry.getDefinition().getId();
+        boolean eligible = loggedIn && canFill(entry);
+        boolean active = id.equals(fillStashId);
+        JButton fill = compactButton(active ? "Stop filling" : "Fill this STASH");
+        fill.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        fill.setEnabled(eligible || active);
+        fill.setToolTipText(active ? "Stop highlighting items for this STASH"
+            : eligible ? "Highlight bank, inventory, and equipment items for this STASH"
+            : fillUnavailableReason(entry));
+        fill.getAccessibleContext().setAccessibleName((active ? "Stop filling " : "Fill this STASH: ")
+            + displayText(entry.getDefinition().getName()));
+        fill.addActionListener(event -> {
+            if (active) actions.clearFillStash();
+            else if (eligible) actions.fillStash(id);
+        });
+        return fill;
+    }
+
+    private static boolean canFill(StashEntry entry)
+    {
+        return entry.getBuildStatus() == BuildStatus.BUILT && entry.getContentsStatus() == ContentsStatus.EMPTY;
+    }
+
+    private static String fillUnavailableReason(StashEntry entry)
+    {
+        if (entry.getBuildStatus() != BuildStatus.BUILT) return "Build this STASH before selecting it to fill";
+        if (entry.getContentsStatus() == ContentsStatus.FILLED) return "This STASH is already marked filled";
+        return "Confirm this built STASH is empty before selecting it to fill";
     }
 
     private JLabel sectionLabel(String text)
@@ -1079,5 +1173,7 @@ public final class StashLedgerPanel extends PluginPanel
         void showOnMap(StashDefinition definition);
         void openWiki(StashDefinition definition);
         void refresh();
+        default void fillStash(String id) { }
+        default void clearFillStash() { }
     }
 }

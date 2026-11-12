@@ -33,7 +33,14 @@ e7cc5f17cd44e9873678c03958080603049f7ed6fa09c0ead2d57e3f03e8eb45  stash-ledger-0
 53e187c3098aa0105e1f5cfa93723ae92655d8acb8345afff4b249b51cba03de  stash-ledger-0.1.1-all.jar
 ```
 
-Version 0.1.1's Plugin Hub review and official distribution are pending. The
+[Plugin Hub PR 20555](https://github.com/runelite/plugin-hub/pull/20555) pins
+`a81540cc2b7b32f7742cdd40165871fd53afe08b`. Its source CI
+[43165496739](https://github.com/wyattf1995/runelite-stash-ledger/actions/runs/43165496739)
+and official Hub build
+[43165622919](https://github.com/runelite/plugin-hub/actions/runs/43165622919) passed.
+All 21 Java source files in the Hub build archive match the pin; its JAR matches
+the CI manifest hash and size. Maintainer review and official distribution are
+still pending. The signed manifest checked at 06:08 UTC still lists 0.1.0. The
 new bank outlines, hover and fill mode have automated coverage; a live in-game
 bank/contents/account-switch pilot has not been performed. Existing live checks
 listed below apply to the earlier candidate only.

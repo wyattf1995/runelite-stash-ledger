@@ -97,7 +97,8 @@ it does not guess interchangeable items. See [catalog provenance](docs/catalog-p
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
 Version `0.1.1` adds the item outlines, hover details and selected-STASH mode
-described above. Its validated update is awaiting Plugin Hub submission and review.
+described above. The [update submission](https://github.com/runelite/plugin-hub/pull/20555) has
+passed the Plugin Hub build and is awaiting maintainer review.
 
 Version `0.1.0` is available in RuneLite's Plugin Hub. The
 [submission](https://github.com/runelite/plugin-hub/pull/20516) was merged on

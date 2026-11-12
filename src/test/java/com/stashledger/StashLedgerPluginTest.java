@@ -34,7 +34,9 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.MenuOptionClicked;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -163,6 +165,67 @@ public class StashLedgerPluginTest
         set("constructionReady", true);
         assertEquals(true, call("syncWatsonBoard"));
         assertEquals(ContentsStatus.EMPTY, state.snapshot().get(0).getContentsStatus());
+    }
+
+    @Test public void unmatchedNoticeboardRowCannotPartiallyReplaceSavedContents() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        LedgerState state = (LedgerState) get("state");
+        Map<String, BuildStatus> builds = new HashMap<>();
+        catalog.getDefinitions().forEach(definition -> builds.put(definition.getId(), BuildStatus.BUILT));
+        state.applyBuildScan(builds);
+        String savedId = catalog.getDefinitions().get(0).getId();
+        state.markContents(savedId, ContentsStatus.FILLED);
+        String saved = state.serialize();
+        installEmptyBoard(catalog);
+        installUnknownBoard(StashTier.MASTER);
+        set("constructionReady", true);
+
+        assertEquals(false, call("syncWatsonBoard"));
+
+        assertEquals("A failed board must preserve every prior contents observation", saved, state.serialize());
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test public void finalNoticeboardRetryExplainsTheFailureWithoutChangingSavedContents() throws Exception
+    {
+        StashCatalog catalog = (StashCatalog) get("catalog");
+        LedgerState state = (LedgerState) get("state");
+        Map<String, BuildStatus> builds = new HashMap<>();
+        catalog.getDefinitions().forEach(definition -> builds.put(definition.getId(), BuildStatus.BUILT));
+        state.applyBuildScan(builds);
+        String savedId = catalog.getDefinitions().get(0).getId();
+        state.markContents(savedId, ContentsStatus.FILLED);
+        String saved = state.serialize();
+        installEmptyBoard(catalog);
+        installUnknownBoard(StashTier.MASTER);
+        set("constructionReady", true);
+        set("boardOpen", true);
+        set("boardPending", true);
+        set("boardAttempts", 4);
+
+        plugin.onGameTick(new GameTick());
+
+        assertEquals(false, get("boardPending"));
+        String status = String.valueOf(get("message")).toLowerCase(java.util.Locale.ROOT);
+        assertTrue(status.contains("master"));
+        assertTrue(status.contains("not a stash label"));
+        assertTrue(status.contains("unchanged"));
+        assertEquals(saved, state.serialize());
+        verify(config, never()).setConfiguration(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test public void noticeboardDiagnosticsClearForANewBoardAndAccount() throws Exception
+    {
+        set("latestBoardDiagnostic", "Unknown location in beginner: stale value");
+        WidgetLoaded loaded = new WidgetLoaded();
+        loaded.setGroupId(493);
+        plugin.onWidgetLoaded(loaded);
+        assertNull(get("latestBoardDiagnostic"));
+
+        set("latestBoardDiagnostic", "Unknown location in beginner: stale value");
+        call("clearAccount");
+        assertNull(get("latestBoardDiagnostic"));
     }
 
     @Test public void staleMapCallbackCannotCrossAccountEpoch() throws Exception
@@ -596,6 +659,16 @@ public class StashLedgerPluginTest
             when(root.getChildren()).thenReturn(children.toArray(new Widget[0]));
             when(client.getWidget(493, 4 + tier.ordinal() * 2)).thenReturn(root);
         }
+    }
+
+    private void installUnknownBoard(StashTier tier)
+    {
+        Widget label = mock(Widget.class);
+        when(label.getType()).thenReturn(4);
+        when(label.getText()).thenReturn("<col=ff00ff>not a STASH\nlabel</col>");
+        Widget root = mock(Widget.class);
+        when(root.getChildren()).thenReturn(new Widget[] { label });
+        when(client.getWidget(493, 4 + tier.ordinal() * 2)).thenReturn(root);
     }
 
     private void verifyNoInteractionsExceptProfileReads()

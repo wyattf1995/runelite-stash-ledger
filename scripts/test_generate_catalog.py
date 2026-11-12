@@ -72,18 +72,21 @@ class GenerateCatalogTest(unittest.TestCase):
             CENTRE_OF_CANIFIS("Canifis", STASHUnit.CENTRE_OF_CANIFIS, Type.Rock),
             BARBARIAN_OUTPOST_OBSTACLE_COURSE("Barbarian Outpost Course",
                 "Barbarian Outpost obstacle course", STASHUnit.BARBARIAN_OUTPOST_OBSTACLE_COURSE, Type.Bush),
+            NORTH_OF_THE_TWILIGHT_TEMPLE("Twilight Temple Mine", STASHUnit.TWILIGHT_TEMPLE_MINE, Type.Hole),
             WARRIORS_GUILD_BANK("Warriors Guild Bank", STASHUnit.WARRIORS_GUILD_BANK, Type.Hole),
             WARRIORS_GUILD_BANK_29047("Warriors Guild Bank", STASHUnit.WARRIORS_GUILD_BANK_29047, Type.Crate);
         '''
 
         aliases = generate_catalog.parse_watson_aliases(source, [
             "CENTRE_OF_CANIFIS", "BARBARIAN_OUTPOST_OBSTACLE_COURSE",
+            "TWILIGHT_TEMPLE_MINE",
             "WARRIORS_GUILD_BANK", "WARRIORS_GUILD_BANK_29047",
         ])
 
         self.assertEqual("centre of canifis", aliases["CENTRE_OF_CANIFIS"])
         self.assertEqual("barbarian outpost obstacle course",
                          aliases["BARBARIAN_OUTPOST_OBSTACLE_COURSE"])
+        self.assertEqual("north of the twilight temple", aliases["TWILIGHT_TEMPLE_MINE"])
         self.assertEqual("warriors guild bank", aliases["WARRIORS_GUILD_BANK"])
         self.assertEqual("warriors guild bank", aliases["WARRIORS_GUILD_BANK_29047"])
 

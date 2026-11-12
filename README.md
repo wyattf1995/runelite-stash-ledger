@@ -96,9 +96,9 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-Version `0.1.1` is available in RuneLite's Plugin Hub, including item outlines,
-hover details and selected-STASH fill mode. The
-[update submission](https://github.com/runelite/plugin-hub/pull/20555) merged on
+Version `0.1.2` is available in RuneLite's Plugin Hub, including the corrected
+Watson location aliases, item outlines, hover details and selected-STASH fill mode.
+The [update submission](https://github.com/runelite/plugin-hub/pull/20592) merged on
 2026-11-12 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
 plugin were verified against the reviewed source. Install or update STASH Ledger
 through RuneLite's Plugin Hub.
@@ -108,19 +108,24 @@ is retained in the validation history.
 
 ### Watson noticeboard patch
 
-Version 0.1.2 corrects noticeboard location matching, including shortened labels
-such as “Canifis” versus the board's “Centre of Canifis.” It preserves existing
-contents unless the complete board matches. The patch is validated and awaiting
-Plugin Hub publication. After updating, reopen Watson's noticeboard to sync.
+Version 0.1.2 corrects catalog aliases, including shortened labels such as
+“Canifis” versus the board's “Centre of Canifis.” It preserves existing contents
+unless the complete board matches. Publication is verified, but a user reports
+continued matching failure after updating. Successful live sync is not yet
+verified; further diagnostics are prepared in the 0.1.3 draft.
 See [validation evidence](docs/validation.md).
 
-### Tier-dot candidate (not released)
+### Version 0.1.3 candidate (not released)
 
 The local 0.1.3 candidate adds a configurable color for each clue tier and a
 single-color mode under **Dot colors**. With **Item highlight style → Dot**, an
 item needed by several tiers shows one dot per relevant tier, in Beginner-to-Master
 order. Filled destinations stay excluded and **Fill this STASH** still narrows
 the plan. Hover text names all relevant tiers even when destination rows are capped.
+
+The draft also preserves word boundaries in noticeboard line-break markup and
+reports the failing tier and reason when a complete scan is rejected. Line breaks
+are a confirmed normalization gap, not yet the confirmed cause of the live error.
 
 Compilation, tests and live rendering of this candidate remain pending; the build
 fleet is blocked by an earlier job's NAS archive recovery. This is not a published

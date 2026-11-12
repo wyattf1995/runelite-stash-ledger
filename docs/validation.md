@@ -1,14 +1,26 @@
-# Version 0.1.3 tier-dot candidate — validation pending
+# Version 0.1.3 candidate — validation pending
 
-The configurable tier-dot source and independent tests are merged locally on
-`feature-tier-dots-20261112`. No Java compilation, execution, pixel rendering or
-source-only proof has run for this candidate. The existing fleet archive recovery
-hold prevents a new validation job. The six new source-only proof definitions
-have been checked only for unique source matches and existing test methods.
+The configurable tier-dot source, noticeboard diagnostics, line-break handling
+and independent tests are merged locally on `feature-tier-dots-20261112`.
+No Java compilation, execution, pixel rendering or source-only proof has run for
+this candidate. The existing fleet archive recovery hold prevents new validation:
+the NAS cache SSD is missing and a separate repair owns its recovery.
+
+There are 49 Java source-only proof definitions plus two Python definitions.
+The Java definitions have only been checked statically for unique source matches
+and existing test methods. They are not completed red/restore/green proofs.
+
+The new diagnostic tests preserve previous contents when the final tier fails,
+check bounded tier-specific failure messages and their account/board reset, and
+retain the distinction between a malformed board and unavailable save/construction
+state. Explicit line-break markup now keeps word boundaries; whether the live
+board uses that markup has not been captured, so this is not a claim that the
+reported 0.1.2 failure is resolved.
 
 The results below belong to the earlier 0.1.2 candidate. They must not be reported
-as validation of the tier-dot changes. Run the complete candidate gate, inspect
-its actual evidence, and perform a live bank pilot before making those claims.
+as validation of these changes. After original-job recovery, run the full guarded
+candidate gate, inspect actual evidence and perform live bank and noticeboard
+checks before claiming those flows work.
 
 ---
 
@@ -37,8 +49,17 @@ Warriors' Guild IDs. Existing punctuation normalization coverage is retained.
 c67af77a0b92d1bddeb7479cf13668de913104293b6cbf8d2e42a85d3e5bc130  stash-ledger-0.1.2-all.jar
 ```
 
-Publication of 0.1.2 is pending. The user's screenshot confirms the original
-failure; successful sync in the corrected live client is still unverified.
+Version 0.1.2 publication was verified on 2026-11-12 at 23:05 UTC. Hub PR20592
+merged as `b87a78f32f785ddc77f60f5cefec5aa3093ebf8f`, pinning
+`0e901f1d340f7ca0fc50a68e51b0a3ca5fb058a0`. Production build/upload run43322283813
+passed. The signed official manifest lists0.1.2 with a108947-byte JAR, SHA256
+`2609ad81b15de7625a6ba871211a10fcfcb3d51ff8baed8f5a0c574f6b0489de`.
+All reviewed archive entries match except the generated update timestamp.
+
+The user reports the same noticeboard failure after updating. Successful live
+sync remains unverified; the original alias correction is not sufficient evidence
+that the complete live interface works. The next candidate adds diagnostics to
+identify the remaining failure without accepting partial or unknown board data.
 
 ---
 

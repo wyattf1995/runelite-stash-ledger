@@ -13,7 +13,8 @@ for the rendered interface and development setup.
   the RuneLite client thread. Never treat unavailable data as false.
 - Separate construction and contents states. Contents can be synced from
   Watson's noticeboard, an exact confirmed STASH interaction or the user.
-- Needed-item dots in inventory/bank/equipment; optional all-unit map markers
+- Needed-item outlines or dots in inventory/bank/equipment, destination hover
+  details and session-only single-STASH fill focus; optional all-unit map markers
   and per-card map and Wiki actions. No gameplay automation or remote uploads.
 - Log out clears visible account state; switching profile never mixes accounts.
 
@@ -30,14 +31,16 @@ accurate; alternatives remain alternatives. Use pinned licensed upstream data.
 
 `com.stashledger.ui` contains the Swing sidebar. Entry point:
 `new StashLedgerPanel(Actions actions)`, extending RuneLite `PluginPanel`.
-`void update(List<StashEntry> entries, String accountName, boolean loggedIn)`
-is called on Swing EDT; `void setStatusMessage(String text)` is optional.
+`void update(List<StashEntry> entries, String accountName, boolean loggedIn, String fillStashId)`
+is called on Swing EDT; the three-argument overload clears fill focus; `void setStatusMessage(String text)` is optional.
 Nested public interface `Actions` defines:
 `void togglePinned(String id)`;
 `void markContents(String id, ContentsStatus status)`;
 `void showOnMap(StashDefinition definition)`;
 `void openWiki(StashDefinition definition)`;
-`void refresh()`.
+`void refresh()`;
+`void fillStash(String id)`;
+`void clearFillStash()`.
 
 UI actions must preserve search/filter/scroll/expanded card state on updates.
 Disable account-changing actions when logged out. Manual contents choice should
@@ -63,11 +66,28 @@ action, expires after 30 game ticks, and rechecks account identity and proximity
 before applying contents. Login, logout, world hopping and disabling tracking
 clear pending interactions. Construction remains separately script-derived.
 
-`NeededItemProvider` publishes an immutable set of source-declared item candidates
-for units not confirmed filled. Item alternatives are flattened only for passive
-highlighting; this is not an equipment-satisfaction or possession-count model.
-`StashNeededItemOverlay` draws a gold planner dot without modifying widgets or
-items. Profile changes and disabling highlights clear the snapshot.
+`NeededItemProvider` publishes an immutable map of source-declared item candidates
+and their STASH destinations. Global mode includes units not both built and
+filled; selected mode includes only the chosen built, confirmed-empty unit.
+Canonicalized alternatives are deduplicated by logical STASH ID, preserving
+source-declared exclusions. This is not an equipment-satisfaction or
+possession-count model.
+
+`StashNeededItemOverlay` uses ItemManager's cached icon outline (original widget
+ID and quantity), or the configurable compact dot. Hover details show at most
+six destinations plus a remaining count and explain unknown construction or
+contents. Hover tooltips are suppressed for open menus, dragging, disabled
+hover details and pointers outside the item. Profile changes and disabling
+highlights clear the item snapshot. No widgets or items are modified.
+
+Fill focus lives only on the client thread and is never persisted. The sidebar
+callback passes the existing lifecycle/account guards, then rechecks built and
+empty eligibility when the queued action executes. Publishing clears invalid
+focus before updating highlights and the sidebar. Logout, profile changes and
+shutdown clear it. Selection changes neither contents nor game inventory.
+The status area grows with wrapped text so its banner and Stop control remain
+available even when the selected card is filtered out. Disabled highlights are
+respected; the sidebar tells the user to enable them in settings.
 
 `StashMapMarkers` owns overview markers separately from the selected card marker.
 It preserves unknown states, can hide filled units, and removes only its own

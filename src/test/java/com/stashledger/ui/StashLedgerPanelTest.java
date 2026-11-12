@@ -304,6 +304,73 @@ public class StashLedgerPanelTest
         });
     }
 
+    @Test
+    public void fillThisStashSelectsOnlyAConfirmedBuiltEmptyCard() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            clickAccessible(panel, "Expand Canifis");
+            clickAccessible(panel, "Fill this STASH: Canifis");
+            clickAccessible(panel, "Expand Barrows chest");
+            clickAccessible(panel, "Expand Fishing Guild bank");
+            clickAccessible(panel, "Expand Draynor market");
+        });
+        assertEquals("CANIFIS", actions.fillId);
+        SwingUtilities.invokeAndWait(() -> {
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Barrows chest").isEnabled());
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Fishing Guild bank").isEnabled());
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Draynor market").isEnabled());
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Barrows chest").getToolTipText().contains("already marked filled"));
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Fishing Guild bank").getToolTipText().contains("Confirm"));
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Draynor market").getToolTipText().contains("Build"));
+        });
+    }
+
+    @Test
+    public void activeFillFocusShowsPersistentBannerAndClearCallbackWhenCardIsFilteredOut() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.update(entries, "Demo account", true, "CANIFIS");
+            click(panel, "Filled");
+            assertTrue(panel.visibleEntries().stream().noneMatch(entry -> entry.getDefinition().getId().equals("CANIFIS")));
+            JLabel banner = findLabelContaining(panel, "Filling: Canifis");
+            assertTrue(banner.isVisible());
+            clickAccessible(panel, "Stop filling selected STASH");
+        });
+        assertEquals(1, actions.clearFillCalls);
+    }
+
+    @Test
+    public void fillFocusClearsOnLogoutOrWhenTheSnapshotNoLongerContainsAConfirmablyEmptyStash() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.update(entries, "Demo account", true, "CANIFIS");
+            assertTrue(findLabelContaining(panel, "Filling: Canifis").isVisible());
+            panel.update(entries, "", false, "CANIFIS");
+            assertTrue(findLabelContainingOrNull(panel, "Filling: Canifis", false) == null);
+            panel.update(Arrays.asList(entry("CANIFIS", "Canifis", StashTier.MEDIUM,
+                BuildStatus.BUILT, ContentsStatus.FILLED, false)), "Demo account", true, "CANIFIS");
+            assertTrue(findLabelContainingOrNull(panel, "Filling: Canifis", false) == null);
+        });
+    }
+
+    @Test
+    public void fillBannerAndControlFitAtTheRuneLiteSidebarWidth() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            StashEntry longTitle = entry("CANIFIS", "Auburys Shop In Varrock", StashTier.MASTER,
+                BuildStatus.BUILT, ContentsStatus.EMPTY, false);
+            panel.update(Arrays.asList(longTitle), "Demo account", true, "CANIFIS");
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
+            JScrollPane scrollPane = find(panel, JScrollPane.class);
+            JLabel banner = findLabelContaining(panel, "Filling: Auburys");
+            assertDetailTextFits(banner);
+            assertInsideViewport(panel, scrollPane, banner);
+            assertInsideViewport(panel, scrollPane, findAccessibleButton(panel, "Stop filling selected STASH"));
+            assertEquals(-1, FontManager.getRunescapeFont().canDisplayUpTo("Fill this STASHStop fillingFilling:"));
+        });
+    }
+
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,
                                     ContentsStatus contents, boolean pinned, String... items)
     {
@@ -520,10 +587,14 @@ public class StashLedgerPanelTest
         private String mapId;
         private String contentsId;
         private ContentsStatus contentsStatus;
+        private String fillId;
+        private int clearFillCalls;
         @Override public void togglePinned(String id) { pinId = id; }
         @Override public void markContents(String id, ContentsStatus status) { contentsId = id; contentsStatus = status; }
         @Override public void showOnMap(StashDefinition definition) { mapId = definition.getId(); }
         @Override public void openWiki(StashDefinition definition) { }
         @Override public void refresh() { }
+        @Override public void fillStash(String id) { fillId = id; }
+        @Override public void clearFillStash() { clearFillCalls++; }
     }
 }

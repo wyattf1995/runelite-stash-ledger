@@ -18,17 +18,23 @@ The preview uses a small demo account, not live player progress.
 - Read saved contents from Watson's noticeboard or explicitly confirm contents
   for a built unit. Confirmed STASH Search interactions also update filled/empty
   state automatically. Unknown contents are distinct from empty.
-- Mark needed clue items with a gold dot in inventory, bank and equipment,
-  including item variants. These are planning hints, not owned-item counts or
-  proof that an alternative equipment requirement is satisfied.
+- Highlight needed clue items with a clear gold icon outline in the bank,
+  inventory and equipment. A compact gold-dot style remains available. Hover an
+  item for its STASH destinations, clue tiers and last confirmed states.
+- Select **Fill this STASH** on a built, confirmed-empty unit to highlight only
+  its items. A persistent banner identifies the selection; **Stop filling**
+  returns to all unfinished units. Selection ends on completion, an unknown or
+  unbuilt state, logout, account change or plugin shutdown.
+- Item guidance preserves accepted variants and exclusions. It does not count
+  owned items or claim that an alternative equipment requirement is satisfied.
 - Keep a profile-scoped shortlist; logout and account changes clear visible
   account state.
 - Show all STASH locations on the world map, optionally hiding confirmed filled
   units, or select one location from its card. Map tooltips explain unknown,
   not-built, empty and filled states. Open RuneLite's general STASH Wiki page.
 
-Settings let you turn item highlighting, automatic interaction tracking and
-map markers on or off. The plugin never moves a character or uploads account data.
+Settings let you choose outline or dot highlights, disable item hover details,
+and turn item highlighting, automatic interaction tracking and map markers on or off. The plugin never moves a character or uploads account data.
 
 Construction uses RuneLite's Watson STASH check script. Contents are the last
 confirmed noticeboard, interaction or manual state, not a live inventory scan.
@@ -46,6 +52,11 @@ Open Watson's noticeboard to reconcile contents you changed outside this client.
    Later confirmed STASH interactions update individual units automatically.
 4. Expand a card for materials and clue items. Use **My list** to focus on pinned
    units, or **Hide filled** to work through unfinished storage.
+5. For a built unit confirmed empty, select **Fill this STASH**, open your bank,
+   and gather its highlighted items. Hover an item to check the destination.
+   The selection guides you; it does not withdraw items or change contents.
+   Complete the deposit yourself. If item highlighting is disabled, enable
+   **Highlight needed items** in the plugin settings.
 
 An unknown contents state means it has not been confirmed. It does not mean the
 unit is empty. Filled/empty is tracked per unit, not per individual stored item.
@@ -56,7 +67,7 @@ The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
 ```sh
-java -ea -jar build/libs/stash-ledger-0.1.0-all.jar --developer-mode --debug
+java -ea -jar build/libs/stash-ledger-0.1.1-all.jar --developer-mode --debug
 ```
 
 On macOS, the development launcher also needs this JVM option:
@@ -84,6 +95,9 @@ for the tested commit and remaining live checks.
 The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
+
+Version `0.1.1` adds the item outlines, hover details and selected-STASH mode
+described above. Its validated update is awaiting Plugin Hub submission and review.
 
 Version `0.1.0` is available in RuneLite's Plugin Hub. The
 [submission](https://github.com/runelite/plugin-hub/pull/20516) was merged on

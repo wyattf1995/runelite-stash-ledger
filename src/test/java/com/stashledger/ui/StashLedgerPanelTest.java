@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.stashledger.data.StashCatalog;
 import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashDefinition;
@@ -304,6 +305,107 @@ public class StashLedgerPanelTest
         });
     }
 
+    @Test
+    public void fillThisStashSelectsOnlyAConfirmedBuiltEmptyCard() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            clickAccessible(panel, "Expand Canifis");
+            clickAccessible(panel, "Fill this STASH: Canifis");
+            clickAccessible(panel, "Expand Barrows chest");
+            clickAccessible(panel, "Expand Fishing Guild bank");
+            clickAccessible(panel, "Expand Draynor market");
+        });
+        assertEquals("CANIFIS", actions.fillId);
+        SwingUtilities.invokeAndWait(() -> {
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Barrows chest").isEnabled());
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Fishing Guild bank").isEnabled());
+            assertFalse(findAccessibleButton(panel, "Fill this STASH: Draynor market").isEnabled());
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Barrows chest").getToolTipText().contains("already marked filled"));
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Fishing Guild bank").getToolTipText().contains("Confirm"));
+            assertTrue(findAccessibleButton(panel, "Fill this STASH: Draynor market").getToolTipText().contains("Build"));
+        });
+    }
+
+    @Test
+    public void activeFillFocusShowsPersistentBannerAndClearCallbackWhenCardIsFilteredOut() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.update(entries, "Demo account", true, "CANIFIS");
+            click(panel, "Filled");
+            assertTrue(panel.visibleEntries().stream().noneMatch(entry -> entry.getDefinition().getId().equals("CANIFIS")));
+            JLabel banner = findLabelContaining(panel, "Filling: Canifis");
+            assertTrue(banner.isVisible());
+            clickAccessible(panel, "Stop filling selected STASH");
+        });
+        assertEquals(1, actions.clearFillCalls);
+    }
+
+    @Test
+    public void fillFocusClearsOnLogoutOrWhenTheSnapshotNoLongerContainsAConfirmablyEmptyStash() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            panel.update(entries, "Demo account", true, "CANIFIS");
+            assertTrue(findLabelContaining(panel, "Filling: Canifis").isVisible());
+            panel.update(entries, "", false, "CANIFIS");
+            assertTrue(findLabelContainingOrNull(panel, "Filling: Canifis", false) == null);
+            panel.update(Arrays.asList(entry("CANIFIS", "Canifis", StashTier.MEDIUM,
+                BuildStatus.BUILT, ContentsStatus.FILLED, false)), "Demo account", true, "CANIFIS");
+            assertTrue(findLabelContainingOrNull(panel, "Filling: Canifis", false) == null);
+        });
+    }
+
+    @Test
+    public void fillBannerAndStopControlHaveVerticalRoomForLongStatusAtRuneLiteSidebarWidth() throws Exception
+    {
+        SwingUtilities.invokeAndWait(() -> {
+            StashDefinition definition = new StashCatalog().getById("SOUTH_OF_THE_SHRINE_IN_TAI_BWO_WANNAI_VILLAGE");
+            StashEntry longTitle = new StashEntry(definition, BuildStatus.BUILT, ContentsStatus.EMPTY, false);
+            panel.update(Arrays.asList(longTitle), "Demo account", true, definition.getId());
+            panel.setStatusMessage("Fill mode selected. Gather the highlighted items; contents update after confirmation.");
+            panel.setSize(new Dimension(225, 680));
+            layoutTree(panel);
+            JScrollPane scrollPane = find(panel, JScrollPane.class);
+            JLabel status = findLabelContaining(panel, "Fill mode selected. Gather");
+            JLabel banner = findLabelContaining(panel, "Filling: South Of The Shrine");
+            AbstractButton stop = findAccessibleButton(panel, "Stop filling selected STASH");
+            assertDetailTextFits(banner);
+            assertInsideViewport(panel, scrollPane, banner);
+            assertInsideViewport(panel, scrollPane, stop);
+            assertTrue("The fill status must receive its preferred height (actual=" + status.getHeight()
+                + ", preferred=" + status.getPreferredSize().height + ")",
+                status.getHeight() >= status.getPreferredSize().height);
+            assertTrue("The fill banner must receive its preferred height (actual=" + banner.getHeight()
+                + ", preferred=" + banner.getPreferredSize().height + ")",
+                banner.getHeight() >= banner.getPreferredSize().height);
+            assertTrue("The stop control must receive its preferred height (actual=" + stop.getHeight()
+                + ", preferred=" + stop.getPreferredSize().height + ")",
+                stop.getHeight() >= stop.getPreferredSize().height);
+            assertTrue("The complete status must precede the fill banner",
+                status.getY() + status.getHeight() <= banner.getY());
+            assertTrue("The stop control must follow the complete fill banner",
+                banner.getY() + banner.getHeight() <= stop.getY());
+            assertTrue("The status row must contain the complete stop control",
+                stop.getY() + stop.getHeight() <= stop.getParent().getHeight());
+            assertEquals(-1, FontManager.getRunescapeFont().canDisplayUpTo("Fill this STASHStop fillingFilling:"));
+            BufferedImage image = new BufferedImage(450, 1360, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics = image.createGraphics();
+            graphics.scale(2, 2);
+            panel.paint(graphics);
+            graphics.dispose();
+            try
+            {
+                File target = new File("build/ui/stash-ledger-fill.png");
+                target.getParentFile().mkdirs();
+                ImageIO.write(image, "png", target);
+            }
+            catch (Exception exception)
+            {
+                throw new AssertionError("Could not write selected-fill sidebar evidence", exception);
+            }
+        });
+        assertTrue(new File("build/ui/stash-ledger-fill.png").isFile());
+    }
+
     private static StashEntry entry(String id, String name, StashTier tier, BuildStatus build,
                                     ContentsStatus contents, boolean pinned, String... items)
     {
@@ -520,10 +622,14 @@ public class StashLedgerPanelTest
         private String mapId;
         private String contentsId;
         private ContentsStatus contentsStatus;
+        private String fillId;
+        private int clearFillCalls;
         @Override public void togglePinned(String id) { pinId = id; }
         @Override public void markContents(String id, ContentsStatus status) { contentsId = id; contentsStatus = status; }
         @Override public void showOnMap(StashDefinition definition) { mapId = definition.getId(); }
         @Override public void openWiki(StashDefinition definition) { }
         @Override public void refresh() { }
+        @Override public void fillStash(String id) { fillId = id; }
+        @Override public void clearFillStash() { clearFillCalls++; }
     }
 }

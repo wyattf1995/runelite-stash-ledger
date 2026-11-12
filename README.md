@@ -38,8 +38,9 @@ Open Watson's noticeboard to reconcile contents you changed outside this client.
 
 ## Using the sidebar
 
-1. Enable **STASH Ledger** in RuneLite's plugin settings, then select the gold
-   crate on the sidebar. The development client enables it by default.
+1. Open RuneLite's **Plugin Hub**, search for **STASH Ledger**, and install it.
+   Select the gold crate on the sidebar. The development client already includes
+   the plugin and enables it by default.
 2. Log in and select **Refresh** to scan construction for the current account.
 3. Open Watson's noticeboard in game to sync filled/empty contents across units.
    Later confirmed STASH interactions update individual units automatically.
@@ -84,7 +85,8 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-`runelite-plugin.properties` declares version `0.1.0`. The [Plugin Hub submission](https://github.com/runelite/plugin-hub/pull/20516)
-is awaiting review; installing the development client does not make this plugin
-available in a normal RuneLite installation. Hub availability requires RuneLite
-review and acceptance.
+Version `0.1.0` is available in RuneLite's Plugin Hub. The
+[submission](https://github.com/runelite/plugin-hub/pull/20516) was merged on
+2026-11-12 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
+plugin were verified against the reviewed source. A separate development client
+is not required to use the Hub release.

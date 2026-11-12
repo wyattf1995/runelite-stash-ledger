@@ -1,7 +1,7 @@
 # Candidate validation
 
-Verified 2026-11-11 against RuneLite 1.13.6. This candidate is awaiting Plugin
-Hub review; development installation is separate from Hub availability.
+Validated 2026-11-11 against RuneLite 1.13.6. Official Plugin Hub distribution
+was verified on 2026-11-12 UTC after the submission was merged.
 
 Validated code and test commit: `a26d83be33e426264e2e1349ea713c2833984a05`.
 The following documentation update does not change executable inputs.
@@ -40,6 +40,29 @@ red/green proof, both JARs, the rendered sidebar and an archive/checksum receipt
 Evidence collection passed on the original fleet ticket
 `vps-1097480b6acb4c5083907b2491493a28`. The source receipt and exported checksums
 were independently verified. Source and guarding tests were committed separately.
+
+## Official distribution
+
+[Plugin Hub PR 20516](https://github.com/runelite/plugin-hub/pull/20516) merged
+at 2026-11-12 00:36:41 UTC. Its descriptor pins reviewed source
+`c579b19a5cab11595127b4a0197cb893ac419903`, which differs from the validated
+candidate only by documentation and merge history. The
+[production build and upload](https://github.com/runelite/plugin-hub/actions/runs/43128542665)
+succeeded, completing upload at 00:37:39 UTC.
+
+At 04:12 UTC, the official RuneLite 1.13.6 manifest contained exactly one
+`stash-ledger` display entry and one JAR entry, version `0.1.0`. Its RSA/SHA-256
+signature was verified with RuneLite's pinned certificate. The downloaded JAR
+matched the signed manifest and production CI manifest diff in hash and size:
+
+```text
+8fed51321c2d9b37c5bc3f4576f65751398824257b07f41d99c14a2a5d5278da  published JAR (101281 bytes)
+```
+
+All compiled classes and other resources match the reviewed pull-request build.
+Only generated `runelite_plugin.json` creation/update timestamps differ. The
+development launcher is excluded. Publication does not imply that the remaining
+live checks below have been performed.
 
 ## Comprehensive review fixes
 

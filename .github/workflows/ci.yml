@@ -19,3 +19,5 @@ jobs:
           java-version: '11'
       - name: Compile and test
         run: ./gradlew --no-daemon --max-workers=2 test jar
+      - name: Check catalog generator
+        run: python3 -B scripts/test_generate_catalog.py

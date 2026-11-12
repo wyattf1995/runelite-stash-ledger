@@ -22,6 +22,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -103,6 +104,8 @@ public class StashLedgerPlugin extends Plugin
     private int boardAttempts;
     private boolean boardPending;
     private boolean boardOpen;
+    // Client-thread-only failure detail. It never contains account or player data.
+    private String latestBoardDiagnostic;
     private long accountEpoch;
     private volatile long displayedEpoch = -1;
     private volatile long lifecycle;
@@ -183,6 +186,7 @@ public class StashLedgerPlugin extends Plugin
         profile = null;
         boardPending = false;
         boardOpen = false;
+        latestBoardDiagnostic = null;
     }
 
     @Subscribe
@@ -266,7 +270,9 @@ public class StashLedgerPlugin extends Plugin
             else if (++boardAttempts >= 5)
             {
                 boardPending = false;
-                message = "Noticeboard could not be matched completely. Saved contents are unchanged.";
+                message = latestBoardDiagnostic == null
+                    ? "Noticeboard could not be matched completely. Saved contents are unchanged."
+                    : latestBoardDiagnostic + " Saved contents are unchanged.";
                 publish();
             }
         }
@@ -346,6 +352,7 @@ public class StashLedgerPlugin extends Plugin
             boardOpen = true;
             boardPending = true;
             boardAttempts = 0;
+            latestBoardDiagnostic = null;
             requestScan();
         }
     }
@@ -357,6 +364,7 @@ public class StashLedgerPlugin extends Plugin
         {
             boardOpen = false;
             boardPending = false;
+            latestBoardDiagnostic = null;
         }
     }
 
@@ -394,6 +402,7 @@ public class StashLedgerPlugin extends Plugin
         constructionReady = false;
         boardOpen = false;
         boardPending = false;
+        latestBoardDiagnostic = null;
         message = "Log in to scan construction. Open Watson's noticeboard to sync contents.";
         clearSelectedMarkers();
         if (overviewMarkers != null) { overviewMarkers.clear(); }
@@ -433,7 +442,13 @@ public class StashLedgerPlugin extends Plugin
         for (StashTier tier : StashTier.values())
         {
             Widget root = client.getWidget(WATSON_GROUP, 4 + tier.ordinal() * 2);
-            if (root == null || root.getChildren() == null) { return false; }
+            if (root == null || root.getChildren() == null)
+            {
+                latestBoardDiagnostic = tier.name().toLowerCase(Locale.ROOT);
+                latestBoardDiagnostic = Character.toUpperCase(latestBoardDiagnostic.charAt(0))
+                    + latestBoardDiagnostic.substring(1) + " tier is not loaded.";
+                return false;
+            }
             List<WatsonBoardParser.Cell> tierCells = new ArrayList<>();
             for (Widget child : root.getChildren())
             {
@@ -447,8 +462,13 @@ public class StashLedgerPlugin extends Plugin
             cells.put(tier, tierCells);
             aliases.put(tier, catalog.getWatsonAliases(tier));
         }
-        Optional<Map<String, Boolean>> parsed = WatsonBoardParser.parse(cells, aliases, catalog.getDefinitions());
-        if (!parsed.isPresent()) { return false; }
+        WatsonBoardParser.Result result = WatsonBoardParser.parseDetailed(cells, aliases, catalog.getDefinitions());
+        Optional<Map<String, Boolean>> parsed = result.getContents();
+        if (!parsed.isPresent())
+        {
+            latestBoardDiagnostic = result.getDiagnostic();
+            return false;
+        }
         Map<String, BuildStatus> builds = state.buildSnapshot();
         for (Map.Entry<String, Boolean> entry : parsed.get().entrySet())
         {
@@ -458,6 +478,7 @@ public class StashLedgerPlugin extends Plugin
             }
         }
         save();
+        latestBoardDiagnostic = null;
         message = "Contents synced from Watson's noticeboard.";
         publish();
         return true;
@@ -553,6 +574,7 @@ public class StashLedgerPlugin extends Plugin
                 requestScan();
                 boardPending = boardOpen;
                 boardAttempts = 0;
+                latestBoardDiagnostic = null;
                 message = "Scanning construction…";
             });
         }

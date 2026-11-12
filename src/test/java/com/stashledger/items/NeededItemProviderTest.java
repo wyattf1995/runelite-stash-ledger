@@ -102,13 +102,15 @@ public class NeededItemProviderTest
         StashEntry empty = entry("empty", BuildStatus.BUILT, ContentsStatus.EMPTY);
         StashEntry unbuilt = entry("unbuilt", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN);
 
-        provider.refresh(List.of(empty, unbuilt), "empty");
+        StashEntry otherEmpty = entry("filled", BuildStatus.BUILT, ContentsStatus.EMPTY);
+        provider.refresh(List.of(empty, unbuilt, otherEmpty), "empty");
 
         NeededItemDetail detail = provider.detailFor(20).orElseThrow(AssertionError::new);
         assertTrue(detail.isFocused());
         assertEquals(20, detail.getItemId());
         assertEquals(List.of(empty), detail.getStashes());
         assertFalse(provider.isNeeded(30));
+        assertFalse("Other eligible units remain outside the selected plan", provider.isNeeded(10));
         assertThrows(UnsupportedOperationException.class, () -> detail.getStashes().add(unbuilt));
     }
 

@@ -1,6 +1,8 @@
 package com.stashledger.items;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.stashledger.model.BuildStatus;
@@ -91,6 +93,51 @@ public class NeededItemProviderTest
         assertFalse(provider.isNeeded(89));
         assertFalse(provider.detailFor(89).isPresent());
         assertTrue("An empty snapshot must avoid an ItemManager lookup after logout", canonicalizationCalls.get() == 0);
+    }
+
+    @Test
+    public void focusedPlanIncludesOnlyOneBuiltEmptyStashAndItsImmutableDetails()
+    {
+        NeededItemProvider provider = provider();
+        StashEntry empty = entry("empty", BuildStatus.BUILT, ContentsStatus.EMPTY);
+        StashEntry unbuilt = entry("unbuilt", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN);
+
+        provider.refresh(List.of(empty, unbuilt), "empty");
+
+        NeededItemDetail detail = provider.detailFor(20).orElseThrow(AssertionError::new);
+        assertTrue(detail.isFocused());
+        assertEquals(20, detail.getItemId());
+        assertEquals(List.of(empty), detail.getStashes());
+        assertFalse(provider.isNeeded(30));
+        assertThrows(UnsupportedOperationException.class, () -> detail.getStashes().add(unbuilt));
+    }
+
+    @Test
+    public void invalidOrNonEmptyFocusNeverFallsBackToTheGlobalPlan()
+    {
+        NeededItemProvider provider = provider();
+        provider.refresh(List.of(
+            entry("empty", BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("unbuilt", BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN),
+            entry("filled", BuildStatus.BUILT, ContentsStatus.FILLED)), "unbuilt");
+
+        assertFalse(provider.isNeeded(20));
+        assertFalse(provider.isNeeded(30));
+        assertFalse(provider.detailFor(20).isPresent());
+    }
+
+    @Test
+    public void globalDetailsIncludeEveryUnfinishedLocationForTheSameRequirement()
+    {
+        NeededItemProvider provider = new NeededItemProvider(id -> id, Map.of("one", Set.of(44), "two", Set.of(44)));
+        StashEntry one = entry("one", BuildStatus.BUILT, ContentsStatus.EMPTY);
+        StashEntry two = entry("two", BuildStatus.UNKNOWN, ContentsStatus.UNKNOWN);
+
+        provider.refresh(List.of(one, two));
+
+        NeededItemDetail detail = provider.detailFor(44).orElseThrow(AssertionError::new);
+        assertFalse(detail.isFocused());
+        assertEquals(List.of(one, two), detail.getStashes());
     }
 
     private static NeededItemProvider provider()

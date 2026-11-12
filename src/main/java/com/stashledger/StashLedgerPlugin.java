@@ -134,6 +134,7 @@ public class StashLedgerPlugin extends Plugin
         fillStashId = null;
         catalog = new StashCatalog();
         state = new LedgerState(catalog.getDefinitions());
+        latestBoardDiagnostic = null;
         overviewMarkers = new StashMapMarkers(mapPoints);
         neededItems = new NeededItemProvider(itemManager, catalog.getItemRequirementIds());
         itemOverlay = new StashNeededItemOverlay(neededItems, client, itemManager, tooltipManager, config);
@@ -436,7 +437,13 @@ public class StashLedgerPlugin extends Plugin
 
     private boolean syncWatsonBoard()
     {
-        if (!saveHealthy || !constructionReady) { return false; }
+        if (!saveHealthy || !constructionReady)
+        {
+            latestBoardDiagnostic = !saveHealthy
+                ? "Contents sync is disabled because saved data could not be read."
+                : "Construction scan is incomplete. Use Refresh to try again.";
+            return false;
+        }
         Map<StashTier, List<WatsonBoardParser.Cell>> cells = new EnumMap<>(StashTier.class);
         Map<StashTier, Map<String, String>> aliases = new EnumMap<>(StashTier.class);
         for (StashTier tier : StashTier.values())

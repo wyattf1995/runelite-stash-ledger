@@ -272,12 +272,31 @@ public class StashNeededItemOverlayTest
             entry("H", StashTier.HARD, BuildStatus.BUILT, ContentsStatus.EMPTY),
             entry("L", StashTier.ELITE, BuildStatus.BUILT, ContentsStatus.EMPTY),
             entry("X", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
-        Rectangle bounds = new Rectangle(4, 4, 24, 24);
+        for (int size : List.of(24, 32))
+        {
+            Rectangle bounds = new Rectangle(4, 4, size, size);
+            BufferedImage image = renderImage(overlay(detail, config), 42, bounds);
 
-        BufferedImage image = renderImage(overlay(detail, config), 42, bounds);
-
-        assertEquals(List.of(colors), dotColors(image, bounds));
-        assertNoColorOutside(image, bounds, List.of(colors));
+            assertEquals(List.of(colors), dotColors(image, bounds));
+            assertNoColorOutside(image, bounds, List.of(colors));
+            List<Rectangle> dots = new java.util.ArrayList<>();
+            for (Color color : colors)
+            {
+                List<Rectangle> components = componentBounds(image, bounds, color);
+                assertEquals("Each configured tier has exactly one dot at " + size + "px", 1, components.size());
+                Rectangle dot = components.get(0);
+                assertTrue("A dot remains compact", dot.width <= 7 && dot.height <= 7);
+                assertTrue("A dot has visible pixels", dot.width > 0 && dot.height > 0);
+                dots.add(dot);
+            }
+            for (int first = 0; first < dots.size(); first++)
+            {
+                for (int second = first + 1; second < dots.size(); second++)
+                {
+                    assertFalse("Tier dots cannot overlap", dots.get(first).intersects(dots.get(second)));
+                }
+            }
+        }
     }
 
     @Test
@@ -286,12 +305,17 @@ public class StashNeededItemOverlayTest
         StashLedgerConfig config = tierConfig();
         StashNeededItemOverlay overlay = new StashNeededItemOverlay(itemId -> itemId == 42,
             mock(Client.class), mock(ItemManager.class), mock(TooltipManager.class), config);
+        NeededItemDetail multiTier = new NeededItemDetail(42, List.of(
+            entry("Easy", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Hard", StashTier.HARD, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
 
         BufferedImage unrelated = renderImage(overlay, 99, new Rectangle(4, 4, 24, 24));
         BufferedImage tiny = renderImage(overlay, 42, new Rectangle(4, 4, 2, 2));
+        BufferedImage tinyTiered = renderImage(overlay(multiTier, config), 42, new Rectangle(4, 4, 2, 2));
 
         assertEquals(0, paintedPixels(unrelated));
         assertEquals(0, paintedPixels(tiny));
+        assertEquals(0, paintedPixels(tinyTiered));
     }
 
     @Test
@@ -299,17 +323,18 @@ public class StashNeededItemOverlayTest
     {
         NeededItemDetail detail = new NeededItemDetail(42, List.of(
             entry("One", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
-            entry("Two", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Two", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
             entry("Three", StashTier.EASY, BuildStatus.UNKNOWN, ContentsStatus.UNKNOWN),
-            entry("Four", StashTier.MASTER, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN),
+            entry("Four", StashTier.EASY, BuildStatus.NOT_BUILT, ContentsStatus.UNKNOWN),
             entry("Five", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
-            entry("Six", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY),
-            entry("Seven", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
+            entry("Six", StashTier.EASY, BuildStatus.BUILT, ContentsStatus.EMPTY),
+            entry("Seventh master", StashTier.MASTER, BuildStatus.BUILT, ContentsStatus.EMPTY)), false);
 
         String text = StashNeededItemOverlay.tooltipText(detail);
 
         assertTrue(text.contains("Tiers: Easy, Master"));
         assertTrue(text.contains("+1 more locations"));
+        assertFalse(text.contains("Seventh master"));
     }
 
     private static void render(StashNeededItemOverlay overlay, int itemId, WidgetItem item)
@@ -372,6 +397,48 @@ public class StashNeededItemOverlayTest
                 if (!bounds.contains(x, y)) { assertFalse(values.contains(image.getRGB(x, y))); }
             }
         }
+    }
+
+    private static List<Rectangle> componentBounds(BufferedImage image, Rectangle bounds, Color color)
+    {
+        boolean[][] visited = new boolean[bounds.height][bounds.width];
+        List<Rectangle> result = new java.util.ArrayList<>();
+        for (int startY = 0; startY < bounds.height; startY++)
+        {
+            for (int startX = 0; startX < bounds.width; startX++)
+            {
+                if (visited[startY][startX] || image.getRGB(bounds.x + startX, bounds.y + startY) != color.getRGB())
+                {
+                    continue;
+                }
+                java.util.ArrayDeque<Integer> pending = new java.util.ArrayDeque<>();
+                pending.add(startY * bounds.width + startX);
+                visited[startY][startX] = true;
+                int minX = startX, maxX = startX, minY = startY, maxY = startY;
+                while (!pending.isEmpty())
+                {
+                    int point = pending.remove();
+                    int x = point % bounds.width;
+                    int y = point / bounds.width;
+                    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+                    for (int[] delta : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}})
+                    {
+                        int nextX = x + delta[0];
+                        int nextY = y + delta[1];
+                        if (nextX >= 0 && nextX < bounds.width && nextY >= 0 && nextY < bounds.height
+                            && !visited[nextY][nextX]
+                            && image.getRGB(bounds.x + nextX, bounds.y + nextY) == color.getRGB())
+                        {
+                            visited[nextY][nextX] = true;
+                            pending.add(nextY * bounds.width + nextX);
+                        }
+                    }
+                }
+                result.add(new Rectangle(bounds.x + minX, bounds.y + minY, maxX - minX + 1, maxY - minY + 1));
+            }
+        }
+        return result;
     }
 
     private static int paintedPixels(BufferedImage image)

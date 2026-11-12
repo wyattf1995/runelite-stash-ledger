@@ -1,3 +1,17 @@
+# Version 0.1.3 tier-dot candidate — validation pending
+
+The configurable tier-dot source and independent tests are merged locally on
+`feature-tier-dots-20261112`. No Java compilation, execution, pixel rendering or
+source-only proof has run for this candidate. The existing fleet archive recovery
+hold prevents a new validation job. The six new source-only proof definitions
+have been checked only for unique source matches and existing test methods.
+
+The results below belong to the earlier 0.1.2 candidate. They must not be reported
+as validation of the tier-dot changes. Run the complete candidate gate, inspect
+its actual evidence, and perform a live bank pilot before making those claims.
+
+---
+
 # Version 0.1.2 Watson noticeboard correction
 
 The live noticeboard pilot exposed a catalog-generation bug: ordinary entries used

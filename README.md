@@ -67,7 +67,7 @@ The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
 ```sh
-java -ea -jar build/libs/stash-ledger-0.1.2-all.jar --developer-mode --debug
+java -ea -jar build/libs/stash-ledger-0.1.3-all.jar --developer-mode --debug
 ```
 
 On macOS, the development launcher also needs this JVM option:
@@ -113,3 +113,16 @@ such as “Canifis” versus the board's “Centre of Canifis.” It preserves e
 contents unless the complete board matches. The patch is validated and awaiting
 Plugin Hub publication. After updating, reopen Watson's noticeboard to sync.
 See [validation evidence](docs/validation.md).
+
+### Tier-dot candidate (not released)
+
+The local 0.1.3 candidate adds a configurable color for each clue tier and a
+single-color mode under **Dot colors**. With **Item highlight style → Dot**, an
+item needed by several tiers shows one dot per relevant tier, in Beginner-to-Master
+order. Filled destinations stay excluded and **Fill this STASH** still narrows
+the plan. Hover text names all relevant tiers even when destination rows are capped.
+
+Compilation, tests and live rendering of this candidate remain pending; the build
+fleet is blocked by an earlier job's NAS archive recovery. This is not a published
+Plugin Hub update. The broader [hardening roadmap](docs/hardening-plan.md) is a
+proposal, separate from this authorized tier-dot implementation.

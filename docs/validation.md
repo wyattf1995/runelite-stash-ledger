@@ -1,3 +1,33 @@
+# Version 0.1.2 Watson noticeboard correction
+
+The live noticeboard pilot exposed a catalog-generation bug: ordinary entries used
+friendly display names instead of the reference enum's Watson labels. For example,
+`Canifis` did not match `Centre of Canifis`. The correction regenerates 69 aliases,
+retaining all 119 units, explicit label overrides and the tier-scoped Warriors'
+Guild exception. The parser's complete-snapshot rule is unchanged.
+
+Executable/test candidate: `718bac6804463e99002f8a390b0d520754034c20`.
+Validated on the guarded Windows Linux worker on 2026-11-12: 97 Java tests and
+7 Python tests passed, with zero failed, errored or skipped Java tests. All
+36 Java and 2 Python source-only guard removals failed their named tests; exact
+source bytes were restored and the guards passed, followed by the full Java suite.
+Both JARs, headless launcher help and packaged notices/metadata passed.
+
+The new independent 119-row board-label fixture covers all six tiers and mixed
+zero/one/two checkmarks. Generator guards cover the default wrapper enum name,
+explicit board-name overrides, a differing linked RuneLite ID, and the two
+Warriors' Guild IDs. Existing punctuation normalization coverage is retained.
+
+```text
+602f35375c9666487ec7a2b43d5e45dd26c24793a5d30326aa28a6c72f7ab24f  stash-ledger-0.1.2.jar
+c67af77a0b92d1bddeb7479cf13668de913104293b6cbf8d2e42a85d3e5bc130  stash-ledger-0.1.2-all.jar
+```
+
+Publication of 0.1.2 is pending. The user's screenshot confirms the original
+failure; successful sync in the corrected live client is still unverified.
+
+---
+
 # Version 0.1.1 validation
 
 Validated on 2026-11-11 local (2026-11-12 UTC) against RuneLite 1.13.6.

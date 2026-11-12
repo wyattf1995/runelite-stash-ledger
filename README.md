@@ -67,7 +67,7 @@ The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
 ```sh
-java -ea -jar build/libs/stash-ledger-0.1.1-all.jar --developer-mode --debug
+java -ea -jar build/libs/stash-ledger-0.1.2-all.jar --developer-mode --debug
 ```
 
 On macOS, the development launcher also needs this JVM option:
@@ -105,3 +105,11 @@ through RuneLite's Plugin Hub.
 
 The [initial 0.1.0 submission](https://github.com/runelite/plugin-hub/pull/20516)
 is retained in the validation history.
+
+### Watson noticeboard patch
+
+Version 0.1.2 corrects noticeboard location matching, including shortened labels
+such as “Canifis” versus the board's “Centre of Canifis.” It preserves existing
+contents unless the complete board matches. The patch is validated and awaiting
+Plugin Hub publication. After updating, reopen Watson's noticeboard to sync.
+See [validation evidence](docs/validation.md).

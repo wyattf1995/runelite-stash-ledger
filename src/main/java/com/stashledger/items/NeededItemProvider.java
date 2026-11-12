@@ -4,6 +4,7 @@ import com.stashledger.model.BuildStatus;
 import com.stashledger.model.ContentsStatus;
 import com.stashledger.model.StashEntry;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +53,7 @@ public final class NeededItemProvider implements NeededItemLookup
      */
     public void refresh(List<StashEntry> entries, String fillStashId)
     {
-        Map<Integer, List<StashEntry>> entriesByItemId = new HashMap<>();
+        Map<Integer, Map<String, StashEntry>> entriesByItemId = new HashMap<>();
         boolean focused = fillStashId != null;
         if (entries != null)
         {
@@ -65,14 +66,15 @@ public final class NeededItemProvider implements NeededItemLookup
                 for (int requirementId : requirementIdsByStash.getOrDefault(entry.getDefinition().getId(), Set.of()))
                 {
                     int canonicalId = canonicalize.applyAsInt(requirementId);
-                    entriesByItemId.computeIfAbsent(canonicalId, unused -> new java.util.ArrayList<>()).add(entry);
+                    entriesByItemId.computeIfAbsent(canonicalId, unused -> new LinkedHashMap<>())
+                        .put(entry.getDefinition().getId(), entry);
                 }
             }
         }
         Map<Integer, NeededItemDetail> next = new HashMap<>();
-        for (Map.Entry<Integer, List<StashEntry>> entry : entriesByItemId.entrySet())
+        for (Map.Entry<Integer, Map<String, StashEntry>> entry : entriesByItemId.entrySet())
         {
-            next.put(entry.getKey(), new NeededItemDetail(entry.getKey(), entry.getValue(), focused));
+            next.put(entry.getKey(), new NeededItemDetail(entry.getKey(), List.copyOf(entry.getValue().values()), focused));
         }
         detailsByItemId = Map.copyOf(next);
     }

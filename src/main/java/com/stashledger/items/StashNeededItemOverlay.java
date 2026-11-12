@@ -12,8 +12,8 @@ import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.WidgetItem;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.ui.overlay.Tooltip;
-import net.runelite.client.ui.overlay.TooltipManager;
+import net.runelite.client.ui.overlay.tooltip.Tooltip;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.ui.overlay.WidgetItemOverlay;
 
 /** Renders passive, count-free planner markers in inventory, bank, and equipment widgets. */

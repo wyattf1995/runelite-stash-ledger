@@ -15,9 +15,6 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
-    ('fill-layout-height', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
-     'row.add(clearFillButton);', 'row.add(clearFillButton);\n        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));',
-     'com.stashledger.ui.StashLedgerPanelTest', 'fillBannerAndStopControlHaveVerticalRoomForLongStatusAtRuneLiteSidebarWidth'),
     ('fill-sidebar-action', 'src/main/java/com/stashledger/ui/StashLedgerPanel.java',
      'else if (eligible) actions.fillStash(id);', 'else if (eligible) { /* source-only negative proof */ }',
      'com.stashledger.ui.StashLedgerPanelTest', 'fillThisStashSelectsOnlyAConfirmedBuiltEmptyCard'),

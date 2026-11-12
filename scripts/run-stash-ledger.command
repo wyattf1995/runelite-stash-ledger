@@ -1,9 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 STASH_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
-STASH_JAR="$STASH_DIR/stash-ledger-0.1.2-all.jar"
+STASH_JAR="$STASH_DIR/stash-ledger-0.1.3-all.jar"
 if [[ ! -f "$STASH_JAR" ]]; then
-  printf '%s\n' 'Keep this launcher next to stash-ledger-0.1.2-all.jar.' >&2
+  printf '%s\n' 'Keep this launcher next to stash-ledger-0.1.3-all.jar.' >&2
   exit 1
 fi
 if [[ -x /Applications/RuneLite.app/Contents/Resources/jre/bin/java ]]; then

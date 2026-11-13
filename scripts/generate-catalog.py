@@ -15,6 +15,7 @@ TIERS = ("BEGINNER", "EASY", "MEDIUM", "HARD", "ELITE", "MASTER")
 # Keep these corrections evidence-backed; see docs/catalog-provenance.md.
 WATSON_LOCATION_OVERRIDES = {
     "PANDEMONIUM_BAR": "The bar on the Pandemonium",
+    "WINTUMBER_ISLAND": "On Wintumber Island",
 }
 
 

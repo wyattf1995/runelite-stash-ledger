@@ -52,6 +52,14 @@ evidence store. Only labels supported by live or authoritative source evidence
 belong in the override table. An unknown row still rejects the entire contents
 scan; this correction does not permit partial writes or approximate matching.
 
+A second live screenshot on 2026-11-13 reports the exact normalized Elite row
+`on wintumber island`, while the wrapper derives `wintumber island` for
+`WINTUMBER_ISLAND`. The same override table preserves this observed wording.
+Evidence is retained in
+`reports/runelite-stash-wintumber-20261113/live-evidence.json`. The screenshot
+shows the parser diagnostic, not the original Elite row's capitalization; case
+is immaterial to normalization. No other unit label is inferred from this report.
+
 `GeneratedStashItemRequirements.java` is extracted from RuneLite 1.13.6's
 `EmoteClue.java`. It resolves reusable requirement expressions and retains the
 source's inclusive item ranges. It never looks up an item ID from a display

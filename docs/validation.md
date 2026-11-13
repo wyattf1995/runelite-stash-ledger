@@ -1,14 +1,30 @@
-# Version 0.1.3 candidate — validation pending
+# Version 0.1.3 validation
 
-The configurable tier-dot source, noticeboard diagnostics, line-break handling
-and independent tests are merged locally on `feature-tier-dots-20261112`.
-No Java compilation, execution, pixel rendering or source-only proof has run for
-this candidate. The existing fleet archive recovery hold prevents new validation:
-the NAS cache SSD is missing and a separate repair owns its recovery.
+Validated on the guarded NAS Linux worker on 2026-11-12 against RuneLite 1.13.6.
+Exact source: `82a5fa999df7270623a5ebf328450a9abd2372e5`. Subsequent documentation
+and merge commits retain the same executable, test and build inputs.
 
-There are 49 Java source-only proof definitions plus two Python definitions.
-The Java definitions have only been checked statically for unique source matches
-and existing test methods. They are not completed red/restore/green proofs.
+- 114 Java tests passed with zero failures, errors or skips; seven Python tests
+  passed. Java 17 built Java 11 bytecode.
+- All 49 Java and two Python source-only checks failed their named tests after
+  removing the relevant source guard, then passed after exact byte restoration.
+  Restored source hashes match the committed candidate. The full suite passed
+  again after all proofs; source and guarding tests remain in separate commits.
+- Both JARs built. Packaged metadata and notices match source, and the development
+  JAR reached RuneLite's headless option parser with assertions enabled.
+- Both actual Swing sidebar fixture renders were visually inspected. Automated
+  dot tests check configured colors, order, deduplication, live config reads,
+  six separate dots inside 24px and 32px item bounds, and all-tier hover text.
+- Independent exported-artifact verification reconciled the sealed source,
+  JUnit reports, named proof logs, hashes, metadata and commit separation.
+  Server archive checksums and retirement of the exact build workspace passed.
+
+Verified fleet ticket: `vps-5ddaf8aa8bf3436abcbf3a7e2bbe8856`.
+
+```text
+474c3463071fa6157626dd929ddd2d83b88a77e3bddf5c002e75a5e474e1f102  stash-ledger-0.1.3.jar
+993c9fe20e3707b838f5dfc7d06937aa335e8a7cb98d2452d113e9c1ba8905be  stash-ledger-0.1.3-all.jar
+```
 
 The new diagnostic tests preserve previous contents when the final tier fails,
 check bounded tier-specific failure messages and their account/board reset, and
@@ -17,10 +33,11 @@ state. Explicit line-break markup now keeps word boundaries; whether the live
 board uses that markup has not been captured, so this is not a claim that the
 reported 0.1.2 failure is resolved.
 
-The results below belong to the earlier 0.1.2 candidate. They must not be reported
-as validation of these changes. After original-job recovery, run the full guarded
-candidate gate, inspect actual evidence and perform live bank and noticeboard
-checks before claiming those flows work.
+Live bank dots/hover and a successful Watson noticeboard sync are still unverified
+for this candidate. The maintainer explicitly chose to publish the tested update
+and perform those checks on the live release. The noticeboard changes improve
+normalization and diagnostics; they are not a claim that the reported live error
+has been resolved. No gameplay automation or saved-data migration was added.
 
 ---
 

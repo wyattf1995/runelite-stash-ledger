@@ -19,7 +19,8 @@ The preview uses a small demo account, not live player progress.
   for a built unit. Confirmed STASH Search interactions also update filled/empty
   state automatically. Unknown contents are distinct from empty.
 - Highlight needed clue items with a clear gold icon outline in the bank,
-  inventory and equipment. A compact gold-dot style remains available. Hover an
+  inventory and equipment. A compact dot style supports configurable clue-tier
+  colors or one shared color. Hover an
   item for its STASH destinations, clue tiers and last confirmed states.
 - Select **Fill this STASH** on a built, confirmed-empty unit to highlight only
   its items. A persistent banner identifies the selection; **Stop filling**
@@ -33,8 +34,10 @@ The preview uses a small demo account, not live player progress.
   units, or select one location from its card. Map tooltips explain unknown,
   not-built, empty and filled states. Open RuneLite's general STASH Wiki page.
 
-Settings let you choose outline or dot highlights, disable item hover details,
-and turn item highlighting, automatic interaction tracking and map markers on or off. The plugin never moves a character or uploads account data.
+Settings let you choose outline or dot highlights, customize each tier's dot
+color, disable item hover details, and turn item highlighting, automatic
+interaction tracking and map markers on or off. The plugin never moves a
+character or uploads account data.
 
 Construction uses RuneLite's Watson STASH check script. Contents are the last
 confirmed noticeboard, interaction or manual state, not a live inventory scan.
@@ -112,22 +115,23 @@ Version 0.1.2 corrects catalog aliases, including shortened labels such as
 “Canifis” versus the board's “Centre of Canifis.” It preserves existing contents
 unless the complete board matches. Publication is verified, but a user reports
 continued matching failure after updating. Successful live sync is not yet
-verified; further diagnostics are prepared in the 0.1.3 draft.
+verified; version 0.1.3 adds diagnostics for the remaining mismatch.
 See [validation evidence](docs/validation.md).
 
-### Version 0.1.3 candidate (not released)
+### Version 0.1.3 update (publication pending)
 
-The local 0.1.3 candidate adds a configurable color for each clue tier and a
+Version 0.1.3 adds a configurable color for each clue tier and a
 single-color mode under **Dot colors**. With **Item highlight style → Dot**, an
 item needed by several tiers shows one dot per relevant tier, in Beginner-to-Master
 order. Filled destinations stay excluded and **Fill this STASH** still narrows
 the plan. Hover text names all relevant tiers even when destination rows are capped.
 
-The draft also preserves word boundaries in noticeboard line-break markup and
+The update also preserves word boundaries in noticeboard line-break markup and
 reports the failing tier and reason when a complete scan is rejected. Line breaks
 are a confirmed normalization gap, not yet the confirmed cause of the live error.
 
-Compilation, tests and live rendering of this candidate remain pending; the build
-fleet is blocked by an earlier job's NAS archive recovery. This is not a published
-Plugin Hub update. The broader [hardening roadmap](docs/hardening-plan.md) is a
-proposal, separate from this authorized tier-dot implementation.
+The exact candidate passed 114 Java tests, seven Python tests and 51 source-only
+regression proofs. Live bank and noticeboard checks remain pending and will be
+performed after publication. This is not yet a distributed Plugin Hub update.
+See [validation evidence](docs/validation.md). The broader
+[hardening roadmap](docs/hardening-plan.md) remains a separate proposal.

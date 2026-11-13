@@ -41,6 +41,8 @@ public class CatalogWatsonIntegrationTest
             catalog.getWatsonAliases(StashTier.EASY).get("the bar on the pandemonium"));
         assertEquals("WINTUMBER_ISLAND",
             catalog.getWatsonAliases(StashTier.ELITE).get("on wintumber island"));
+        assertEquals("BRITTLE_ISLE",
+            catalog.getWatsonAliases(StashTier.MASTER).get("on brittle isle"));
         for (StashTier tier : StashTier.values())
         {
             aliases.put(tier, catalog.getWatsonAliases(tier));
@@ -105,6 +107,8 @@ public class CatalogWatsonIntegrationTest
         assertTrue("The live Pandemonium Easy row must retain its filled state", result.get().get("PANDEMONIUM_BAR"));
         assertEquals("The live Wintumber Elite row must retain its fixture state",
             expected.get("WINTUMBER_ISLAND"), result.get().get("WINTUMBER_ISLAND"));
+        assertEquals("The live Brittle Master row must retain its fixture state",
+            expected.get("BRITTLE_ISLE"), result.get().get("BRITTLE_ISLE"));
     }
 
     private static Map<StashTier, Map<String, String>> aliases(StashCatalog catalog)

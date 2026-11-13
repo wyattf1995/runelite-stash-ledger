@@ -15,7 +15,7 @@ summary.update(passed=code == 0, validationExitCode=code)
 summary['artifacts'] = {str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
                         for p in (root / 'build/libs').glob('*.jar')}
 if code == 0:
-    required = ['build/libs/stash-ledger-0.1.2.jar', 'build/libs/stash-ledger-0.1.2-all.jar',
+    required = ['build/libs/stash-ledger-0.1.3.jar', 'build/libs/stash-ledger-0.1.3-all.jar',
                 'build/ui/stash-ledger.png', 'build/validation/guard-proofs.json']
     summary['passed'] = all((root / p).is_file() for p in required)
     if not summary['passed']:

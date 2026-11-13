@@ -1,3 +1,46 @@
+# Version 0.1.3 validation
+
+Validated on the guarded NAS Linux worker on 2026-11-12 against RuneLite 1.13.6.
+Exact source: `82a5fa999df7270623a5ebf328450a9abd2372e5`. Subsequent documentation
+and merge commits retain the same executable, test and build inputs.
+
+- 114 Java tests passed with zero failures, errors or skips; seven Python tests
+  passed. Java 17 built Java 11 bytecode.
+- All 49 Java and two Python source-only checks failed their named tests after
+  removing the relevant source guard, then passed after exact byte restoration.
+  Restored source hashes match the committed candidate. The full suite passed
+  again after all proofs; source and guarding tests remain in separate commits.
+- Both JARs built. Packaged metadata and notices match source, and the development
+  JAR reached RuneLite's headless option parser with assertions enabled.
+- Both actual Swing sidebar fixture renders were visually inspected. Automated
+  dot tests check configured colors, order, deduplication, live config reads,
+  six separate dots inside 24px and 32px item bounds, and all-tier hover text.
+- Independent exported-artifact verification reconciled the sealed source,
+  JUnit reports, named proof logs, hashes, metadata and commit separation.
+  Server archive checksums and retirement of the exact build workspace passed.
+
+Verified fleet ticket: `vps-5ddaf8aa8bf3436abcbf3a7e2bbe8856`.
+
+```text
+474c3463071fa6157626dd929ddd2d83b88a77e3bddf5c002e75a5e474e1f102  stash-ledger-0.1.3.jar
+993c9fe20e3707b838f5dfc7d06937aa335e8a7cb98d2452d113e9c1ba8905be  stash-ledger-0.1.3-all.jar
+```
+
+The new diagnostic tests preserve previous contents when the final tier fails,
+check bounded tier-specific failure messages and their account/board reset, and
+retain the distinction between a malformed board and unavailable save/construction
+state. Explicit line-break markup now keeps word boundaries; whether the live
+board uses that markup has not been captured, so this is not a claim that the
+reported 0.1.2 failure is resolved.
+
+Live bank dots/hover and a successful Watson noticeboard sync are still unverified
+for this candidate. The maintainer explicitly chose to publish the tested update
+and perform those checks on the live release. The noticeboard changes improve
+normalization and diagnostics; they are not a claim that the reported live error
+has been resolved. No gameplay automation or saved-data migration was added.
+
+---
+
 # Version 0.1.2 Watson noticeboard correction
 
 The live noticeboard pilot exposed a catalog-generation bug: ordinary entries used
@@ -23,8 +66,17 @@ Warriors' Guild IDs. Existing punctuation normalization coverage is retained.
 c67af77a0b92d1bddeb7479cf13668de913104293b6cbf8d2e42a85d3e5bc130  stash-ledger-0.1.2-all.jar
 ```
 
-Publication of 0.1.2 is pending. The user's screenshot confirms the original
-failure; successful sync in the corrected live client is still unverified.
+Version 0.1.2 publication was verified on 2026-11-12 at 23:05 UTC. Hub PR20592
+merged as `b87a78f32f785ddc77f60f5cefec5aa3093ebf8f`, pinning
+`0e901f1d340f7ca0fc50a68e51b0a3ca5fb058a0`. Production build/upload run43322283813
+passed. The signed official manifest lists0.1.2 with a108947-byte JAR, SHA256
+`2609ad81b15de7625a6ba871211a10fcfcb3d51ff8baed8f5a0c574f6b0489de`.
+All reviewed archive entries match except the generated update timestamp.
+
+The user reports the same noticeboard failure after updating. Successful live
+sync remains unverified; the original alias correction is not sufficient evidence
+that the complete live interface works. The next candidate adds diagnostics to
+identify the remaining failure without accepting partial or unknown board data.
 
 ---
 

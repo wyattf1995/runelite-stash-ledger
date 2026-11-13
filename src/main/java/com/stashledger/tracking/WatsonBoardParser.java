@@ -24,6 +24,33 @@ import java.util.Set;
  */
 public final class WatsonBoardParser
 {
+    public enum Failure
+    {
+        NONE, INVALID_INPUT, INVALID_CATALOG, MISSING_TIER, INVALID_ALIASES,
+        MALFORMED_ROW, UNKNOWN_LOCATION, DUPLICATE_LOCATION, INCOMPLETE_TIER
+    }
+
+    public static final class Result
+    {
+        private final Failure failure;
+        private final StashTier tier;
+        private final String diagnostic;
+        private final Map<String, Boolean> contents;
+
+        private Result(Failure failure, StashTier tier, String diagnostic, Map<String, Boolean> contents)
+        {
+            this.failure = failure;
+            this.tier = tier;
+            this.diagnostic = diagnostic;
+            this.contents = contents;
+        }
+
+        public Failure getFailure() { return failure; }
+        public StashTier getTier() { return tier; }
+        public String getDiagnostic() { return diagnostic; }
+        public Optional<Map<String, Boolean>> getContents() { return Optional.ofNullable(contents); }
+    }
+
     public static final class Cell
     {
         private final int type;
@@ -55,39 +82,60 @@ public final class WatsonBoardParser
         Map<StashTier, Map<String, String>> aliases,
         List<StashDefinition> definitions)
     {
+        return parseDetailed(tiers, aliases, definitions).getContents();
+    }
+
+    /** Failed results never expose a partial contents map. */
+    public static Result parseDetailed(
+        Map<StashTier, List<Cell>> tiers,
+        Map<StashTier, Map<String, String>> aliases,
+        List<StashDefinition> definitions)
+    {
         if (tiers == null || aliases == null || definitions == null)
         {
-            return Optional.empty();
+            return failure(Failure.INVALID_INPUT, null, "Noticeboard data is unavailable.");
         }
 
         Map<StashTier, Set<String>> idsByTier = idsByTier(definitions);
         if (idsByTier == null)
         {
-            return Optional.empty();
+            return failure(Failure.INVALID_CATALOG, null, "STASH catalog data is invalid.");
         }
 
         Map<String, Boolean> parsed = new LinkedHashMap<>();
         for (StashTier tier : StashTier.values())
         {
             List<Cell> cells = tiers.get(tier);
-            Map<String, String> tierAliases = normalizedAliases(aliases.get(tier), idsByTier.get(tier));
-            if (cells == null || tierAliases == null)
+            if (cells == null)
             {
-                return Optional.empty();
+                return failure(Failure.MISSING_TIER, tier, tierName(tier) + " tier is not loaded.");
+            }
+            Map<String, String> tierAliases = normalizedAliases(aliases.get(tier), idsByTier.get(tier));
+            if (tierAliases == null)
+            {
+                return failure(Failure.INVALID_ALIASES, tier, tierName(tier) + " tier aliases are invalid.");
             }
 
-            Optional<Map<String, Boolean>> tierValues = parseTier(cells, tierAliases);
-            if (!tierValues.isPresent() || tierValues.get().size() != idsByTier.get(tier).size()
-                || !tierValues.get().keySet().equals(idsByTier.get(tier)))
+            TierResult tierValues = parseTier(cells, tierAliases, tier);
+            if (tierValues.failure != Failure.NONE)
             {
-                return Optional.empty();
+                return failure(tierValues.failure, tier, tierValues.diagnostic);
             }
-            parsed.putAll(tierValues.get());
+            if (tierValues.values.size() != idsByTier.get(tier).size()
+                || !tierValues.values.keySet().equals(idsByTier.get(tier)))
+            {
+                return failure(Failure.INCOMPLETE_TIER, tier, tierName(tier) + " tier is incomplete: matched "
+                    + tierValues.values.size() + " of " + idsByTier.get(tier).size() + " locations.");
+            }
+            parsed.putAll(tierValues.values);
         }
 
-        return parsed.size() == definitions.size()
-            ? Optional.of(Collections.unmodifiableMap(parsed))
-            : Optional.empty();
+        if (parsed.size() != definitions.size())
+        {
+            return failure(Failure.INVALID_CATALOG, null, "STASH catalog data is inconsistent.");
+        }
+        return new Result(Failure.NONE, null, "Noticeboard matched.",
+            Collections.unmodifiableMap(new LinkedHashMap<>(parsed)));
     }
 
     /** Normalizes only presentation differences seen in noticeboard labels. */
@@ -97,7 +145,8 @@ public final class WatsonBoardParser
         {
             return "";
         }
-        return value.replaceAll("<[^>]*>", "")
+        return value.replaceAll("(?i)<br\\s*/?>", " ")
+            .replaceAll("<[^>]*>", "")
             // The source board labels include parentheses, e.g. Fishing Guild (Outside).
             // Match the catalog generator's punctuation removal exactly.
             .replaceAll("[^\\p{L}\\p{N}\\s]", "")
@@ -116,7 +165,7 @@ public final class WatsonBoardParser
         Set<String> allIds = new HashSet<>();
         for (StashDefinition definition : definitions)
         {
-            if (definition == null || !allIds.add(definition.getId())
+            if (definition == null || definition.getId() == null || definition.getTier() == null || !allIds.add(definition.getId())
                 || !result.get(definition.getTier()).add(definition.getId()))
             {
                 return null;
@@ -144,7 +193,7 @@ public final class WatsonBoardParser
         return result;
     }
 
-    private static Optional<Map<String, Boolean>> parseTier(List<Cell> cells, Map<String, String> aliases)
+    private static TierResult parseTier(List<Cell> cells, Map<String, String> aliases, StashTier tier)
     {
         List<BoardRow> rows = new ArrayList<>();
         String location = null;
@@ -153,7 +202,7 @@ public final class WatsonBoardParser
         {
             if (cell == null || (cell.getType() != 4 && cell.getType() != 5))
             {
-                return Optional.empty();
+                return TierResult.failure(Failure.MALFORMED_ROW, tierName(tier) + " tier has an unexpected row.");
             }
             if (cell.getType() == 4)
             {
@@ -164,7 +213,7 @@ public final class WatsonBoardParser
                 location = normalize(cell.getText());
                 if (location.isEmpty())
                 {
-                    return Optional.empty();
+                    return TierResult.failure(Failure.MALFORMED_ROW, tierName(tier) + " tier has an empty location.");
                 }
                 checks = 0;
             }
@@ -172,13 +221,13 @@ public final class WatsonBoardParser
             {
                 if (location == null || ++checks > 2)
                 {
-                    return Optional.empty();
+                    return TierResult.failure(Failure.MALFORMED_ROW, tierName(tier) + " tier has misplaced status markers.");
                 }
             }
         }
         if (location == null)
         {
-            return Optional.empty();
+            return TierResult.failure(Failure.MALFORMED_ROW, tierName(tier) + " tier has no locations.");
         }
         rows.add(new BoardRow(location, checks));
 
@@ -186,12 +235,57 @@ public final class WatsonBoardParser
         for (BoardRow row : rows)
         {
             String id = aliases.get(row.location);
-            if (id == null || result.put(id, row.checks == 2) != null)
+            if (id == null)
             {
-                return Optional.empty();
+                return TierResult.failure(Failure.UNKNOWN_LOCATION, tierName(tier)
+                    + " tier has an unknown location: " + bounded(row.location) + ".");
+            }
+            if (result.put(id, row.checks == 2) != null)
+            {
+                return TierResult.failure(Failure.DUPLICATE_LOCATION, tierName(tier) + " tier repeats a location.");
             }
         }
-        return Optional.of(result);
+        return TierResult.success(result);
+    }
+
+    private static Result failure(Failure failure, StashTier tier, String diagnostic)
+    {
+        return new Result(failure, tier, diagnostic, null);
+    }
+
+    private static String bounded(String value)
+    {
+        return value.length() <= 80 ? value : value.substring(0, 80);
+    }
+
+    private static String tierName(StashTier tier)
+    {
+        String value = tier.name().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(value.charAt(0)) + value.substring(1);
+    }
+
+    private static final class TierResult
+    {
+        private final Failure failure;
+        private final String diagnostic;
+        private final Map<String, Boolean> values;
+
+        private TierResult(Failure failure, String diagnostic, Map<String, Boolean> values)
+        {
+            this.failure = failure;
+            this.diagnostic = diagnostic;
+            this.values = values;
+        }
+
+        private static TierResult success(Map<String, Boolean> values)
+        {
+            return new TierResult(Failure.NONE, "", values);
+        }
+
+        private static TierResult failure(Failure failure, String diagnostic)
+        {
+            return new TierResult(failure, diagnostic, null);
+        }
     }
 
     private static final class BoardRow

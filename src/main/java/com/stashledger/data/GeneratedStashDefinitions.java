@@ -272,8 +272,8 @@ final class GeneratedStashDefinitions
         aliases.get(StashTier.MEDIUM).put("where the river ortus meets the proudspire", "ORTUS_MEETS_PROUDSPIRE");
         aliases.get(StashTier.HARD).put("twilight temple", "OUTSIDE_TWILIGHT_TEMPLE");
         aliases.get(StashTier.EASY).put("the bar on the pandemonium", "PANDEMONIUM_BAR");
-        aliases.get(StashTier.ELITE).put("wintumber island", "WINTUMBER_ISLAND");
-        aliases.get(StashTier.MASTER).put("brittle isle", "BRITTLE_ISLE");
+        aliases.get(StashTier.ELITE).put("on wintumber island", "WINTUMBER_ISLAND");
+        aliases.get(StashTier.MASTER).put("on brittle isle", "BRITTLE_ISLE");
         java.util.Map<StashTier, java.util.Map<String, String>> immutable = new java.util.EnumMap<>(StashTier.class);
         for (java.util.Map.Entry<StashTier, java.util.Map<String, String>> entry : aliases.entrySet())
         {

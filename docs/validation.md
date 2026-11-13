@@ -1,3 +1,37 @@
+# Version 0.1.5 island noticeboard corrections
+
+Live evidence on 2026-11-13 establishes the normalized Elite label
+`on wintumber island` and the directly visible Master row `On Brittle Isle`.
+The catalog already contained both units; only their Watson aliases omitted
+`On`. The generator and generated aliases now preserve the observed wording.
+The independent full 119-row fixture includes both labels. Unit identities,
+saved keys, coordinates, items and the strict complete-board parser are unchanged.
+
+Validated source: `93e3266eb93cccd0514266864e450d1d64a737da`, on the guarded NAS
+worker against the unchanged RuneLite 1.13.6 pin. Documentation-only follow-up
+and merge history do not change executable, test or build inputs.
+
+- 114 Java tests and ten Python tests passed; no Java failures, errors or skips.
+- All 52 Java and five Python named source-only proofs went red, restored exact
+  committed source bytes, and went green. The full suite passed again afterward.
+- Both JARs, Java 11 bytecode, packaged metadata/notices and headless launcher help passed.
+- Sealed-export verification checked source identity, hashes, proof logs, JUnit
+  reports and separate source/test commits. Compared with 0.1.4, the thin JAR
+  changes only `GeneratedStashDefinitions.class` and version metadata; the other
+  49 STASH Ledger classes are byte-identical.
+- Fleet ticket `vps-4c827afbe2b849d48399f0ae1e3ae690` completed verified artifact
+  export and closeout. Evidence is retained in the island-label release record.
+
+```text
+9dc59067e0d2f94a3b8eb5f7739b2a1a936bbcfa23e82f4b82d168f7fe7efd9e  stash-ledger-0.1.5.jar
+8431f823c6d11d42be9510d2287d9814e25bc2a433e4ea7ce39fd8575b9d8f37  stash-ledger-0.1.5-all.jar
+```
+
+Official 0.1.5 distribution is pending. Successful live contents synchronization
+remains unverified and is explicitly deferred to post-publication testing.
+
+---
+
 # Version 0.1.4 Pandemonium noticeboard correction
 
 A live Watson Easy-tab screenshot on 2026-11-13 identified the exact remaining
@@ -27,9 +61,17 @@ and merge history do not change executable, test or build inputs.
 3813cb752ee910083f298acb1a08452bfde42d2c67530c05a35483a5e6b8c9a2  stash-ledger-0.1.4-all.jar
 ```
 
-Official 0.1.4 distribution is pending. The exact reported label mismatch has a
-verified regression fix; successful live contents sync remains unverified.
-Post-release live checks are explicitly deferred by the maintainer.
+Official 0.1.4 distribution was verified on 2026-11-13 at 18:36 UTC.
+[PR 20637](https://github.com/runelite/plugin-hub/pull/20637) merged as
+`f4fe3f71315ccb6b422a5f784cf99be6acaee37b`, retaining source pin
+`eb3178bcab56e45c9b6bdcf8f02b6d865b73f852`.
+[Production build and upload](https://github.com/runelite/plugin-hub/actions/runs/43460774221)
+passed. The signed official manifest and downloaded 116,917-byte JAR matched
+production CI; only the generated update timestamp differs from reviewed PR CI.
+Published SHA-256:
+`d07c46e900c0dcff92f68f735a5c5c47a2689d3d22ffbdccf1183c297b990cb7`.
+Successful live contents sync remains unverified; the subsequent island-label
+reports are covered by 0.1.5 above.
 
 ---
 

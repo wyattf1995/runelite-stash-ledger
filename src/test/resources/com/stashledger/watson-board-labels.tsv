@@ -9,6 +9,15 @@
 # "The bar on the Pandemonium", replacing the stale wrapper-derived
 # "pandemonium bar". Evidence: reports/runelite-stash-pandemonium-20261113/
 # live-evidence.json and live-easy-noticeboard.png.
+# WINTUMBER_ISLAND is a live-board correction: on 2026-11-13 the plugin
+# diagnostic normalized the Watson row as "on wintumber island", replacing the
+# stale wrapper-derived "wintumber island". Evidence:
+# reports/runelite-stash-wintumber-20261113/live-evidence.json and
+# live-wintumber-diagnostic.png.
+# BRITTLE_ISLE is a live-board correction: on 2026-11-13 Watson displayed
+# "On Brittle Isle", replacing the stale wrapper-derived "brittle isle".
+# Evidence: reports/runelite-stash-wintumber-20261113/live-brittle-evidence.json
+# and live-brittle-noticeboard.png.
 # id	tier	Watson board label
 NEAR_A_SHED_IN_LUMBRIDGE_SWAMP	EASY	near a shed in lumbridge swamp
 ON_THE_BRIDGE_TO_THE_MISTHALIN_WIZARDS_TOWER	EASY	on the bridge to the misthalin wizards tower
@@ -116,8 +125,8 @@ NORTH_OF_MOUNT_KARUULM	MEDIUM	north of mount karuulm
 TWILIGHT_TEMPLE_MINE	MEDIUM	north of the twilight temple
 OUTSIDE_TWILIGHT_TEMPLE	HARD	twilight temple
 PANDEMONIUM_BAR	EASY	The bar on the Pandemonium
-WINTUMBER_ISLAND	ELITE	wintumber island
-BRITTLE_ISLE	MASTER	brittle isle
+WINTUMBER_ISLAND	ELITE	On Wintumber Island
+BRITTLE_ISLE	MASTER	On Brittle Isle
 WESTERN_SALVAGER_OVERLOOK	MASTER	West side of Salvager Overlook
 ORTUS_MEETS_PROUDSPIRE	MEDIUM	where the river ortus meets the proudspire
 TEMPLE_SOUTHEAST_OF_THE_BAZAAR	ELITE	Outside the temple in Civitas illa Fortis

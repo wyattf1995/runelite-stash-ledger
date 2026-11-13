@@ -60,6 +60,13 @@ Evidence is retained in
 shows the parser diagnostic, not the original Elite row's capitalization; case
 is immaterial to normalization. No other unit label is inferred from this report.
 
+The user's subsequent Master-tab screenshot on the same date directly shows
+`On Brittle Isle` for `BRITTLE_ISLE`. Its wrapper-derived `brittle isle` alias is
+also corrected in the generator and the independent fixture. The exact row and
+its screenshot hash are retained in the same evidence store as
+`live-brittle-evidence.json`; this correction is based on the board itself, not
+the wiki's descriptive location wording.
+
 `GeneratedStashItemRequirements.java` is extracted from RuneLite 1.13.6's
 `EmoteClue.java`. It resolves reusable requirement expressions and retains the
 source's inclusive item ranges. It never looks up an item ID from a display

@@ -10,6 +10,12 @@ OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 SOURCE = ROOT / 'scripts/generate-catalog.py'
 PROOFS = [
+    ('watson-generator-wintumber',
+     '    "WINTUMBER_ISLAND": "On Wintumber Island",\n', '',
+     'test_watson_alias_for_wintumber_uses_the_live_noticeboard_label'),
+    ('watson-generator-brittle',
+     '    "BRITTLE_ISLE": "On Brittle Isle",\n', '',
+     'test_watson_alias_for_brittle_uses_the_live_noticeboard_label'),
     ('watson-generator-default', 'else entry.group(1)', 'else args[0][1:-1]',
      'test_watson_aliases_use_wrapper_identifier_unless_the_source_overrides_it'),
     ('watson-generator-warriors',

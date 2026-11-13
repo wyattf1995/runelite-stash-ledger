@@ -15,6 +15,12 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
+    ('watson-wintumber-live-label', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
+     '.put("on wintumber island", "WINTUMBER_ISLAND")', '.put("wintumber island", "WINTUMBER_ISLAND")',
+     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119AgainstPinnedNoticeboardLabelFixture'),
+    ('watson-brittle-live-label', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
+     '.put("on brittle isle", "BRITTLE_ISLE")', '.put("brittle isle", "BRITTLE_ISLE")',
+     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119AgainstPinnedNoticeboardLabelFixture'),
     ('watson-pandemonium-live-label', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
      '.put("the bar on the pandemonium", "PANDEMONIUM_BAR")', '.put("pandemonium bar", "PANDEMONIUM_BAR")',
      'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119AgainstPinnedNoticeboardLabelFixture'),

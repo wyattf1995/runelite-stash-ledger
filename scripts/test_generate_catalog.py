@@ -91,16 +91,23 @@ class GenerateCatalogTest(unittest.TestCase):
         self.assertEqual("warriors guild bank", aliases["WARRIORS_GUILD_BANK_29047"])
 
     def test_watson_alias_for_pandemonium_uses_the_live_noticeboard_label(self):
-        source = '''
-            PANDEMONIUM_BAR("Pandemonium bar", STASHUnit.PANDEMONIUM_BAR, Type.Crate);
-            UNRELATED_BAR("Unrelated bar", STASHUnit.UNRELATED_BAR, Type.Crate);
-        '''
+        constructors = (
+            ("wrapper", 'PANDEMONIUM_BAR("Pandemonium bar", STASHUnit.PANDEMONIUM_BAR, Type.Crate),'),
+            ("explicit", 'PANDEMONIUM_BAR("Pandemonium bar", "Stale explicit label", '
+                         'STASHUnit.PANDEMONIUM_BAR, Type.Crate),'),
+        )
+        for constructor, pandemonium in constructors:
+            with self.subTest(constructor=constructor):
+                source = '''
+                    %s
+                    UNRELATED_BAR("Unrelated bar", STASHUnit.UNRELATED_BAR, Type.Crate);
+                ''' % pandemonium
 
-        aliases = generate_catalog.parse_watson_aliases(
-            source, ["PANDEMONIUM_BAR", "UNRELATED_BAR"])
+                aliases = generate_catalog.parse_watson_aliases(
+                    source, ["PANDEMONIUM_BAR", "UNRELATED_BAR"])
 
-        self.assertEqual("the bar on the pandemonium", aliases["PANDEMONIUM_BAR"])
-        self.assertEqual("unrelated bar", aliases["UNRELATED_BAR"])
+                self.assertEqual("the bar on the pandemonium", aliases["PANDEMONIUM_BAR"])
+                self.assertEqual("unrelated bar", aliases["UNRELATED_BAR"])
 
     def test_source_declared_variations_keep_local_exclusions(self):
         source = '''

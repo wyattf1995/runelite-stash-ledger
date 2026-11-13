@@ -9,12 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 SOURCE = ROOT / 'scripts/generate-catalog.py'
-TEST = 'test_watson_aliases_use_wrapper_identifier_unless_the_source_overrides_it'
 PROOFS = [
-    ('watson-generator-default', 'else entry.group(1)', 'else args[0][1:-1]', TEST),
+    ('watson-generator-default', 'else entry.group(1)', 'else args[0][1:-1]',
+     'test_watson_aliases_use_wrapper_identifier_unless_the_source_overrides_it'),
     ('watson-generator-warriors',
      'if stash_id in {"WARRIORS_GUILD_BANK", "WARRIORS_GUILD_BANK_29047"}:',
-     'if False:', TEST),
+     'if False:',
+     'test_watson_aliases_use_wrapper_identifier_unless_the_source_overrides_it'),
     ('watson-generator-pandemonium',
      'location = WATSON_LOCATION_OVERRIDES.get(stash_id, location)',
      'location = location',

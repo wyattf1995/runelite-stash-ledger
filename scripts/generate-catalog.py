@@ -11,6 +11,11 @@ from pathlib import Path
 
 EXPECTED_COUNT = 119
 TIERS = ("BEGINNER", "EASY", "MEDIUM", "HARD", "ELITE", "MASTER")
+# Exact live noticeboard labels that differ from the pinned reference wrapper.
+# Keep these corrections evidence-backed; see docs/catalog-provenance.md.
+WATSON_LOCATION_OVERRIDES = {
+    "PANDEMONIUM_BAR": "The bar on the Pandemonium",
+}
 
 
 def split_top_level(value):
@@ -222,6 +227,7 @@ def parse_watson_aliases(source, identifiers):
         # by difficulty; the numeric suffix is not part of the displayed name.
         if stash_id in {"WARRIORS_GUILD_BANK", "WARRIORS_GUILD_BANK_29047"}:
             location = "Warriors' Guild bank"
+        location = WATSON_LOCATION_OVERRIDES.get(stash_id, location)
         normalized = normalize_watson_location(location)
         previous = aliases.get(stash_id)
         if previous is not None and previous != normalized:

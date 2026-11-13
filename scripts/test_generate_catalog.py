@@ -90,6 +90,18 @@ class GenerateCatalogTest(unittest.TestCase):
         self.assertEqual("warriors guild bank", aliases["WARRIORS_GUILD_BANK"])
         self.assertEqual("warriors guild bank", aliases["WARRIORS_GUILD_BANK_29047"])
 
+    def test_watson_alias_for_pandemonium_uses_the_live_noticeboard_label(self):
+        source = '''
+            PANDEMONIUM_BAR("Pandemonium bar", STASHUnit.PANDEMONIUM_BAR, Type.Crate);
+            UNRELATED_BAR("Unrelated bar", STASHUnit.UNRELATED_BAR, Type.Crate);
+        '''
+
+        aliases = generate_catalog.parse_watson_aliases(
+            source, ["PANDEMONIUM_BAR", "UNRELATED_BAR"])
+
+        self.assertEqual("the bar on the pandemonium", aliases["PANDEMONIUM_BAR"])
+        self.assertEqual("unrelated bar", aliases["UNRELATED_BAR"])
+
     def test_source_declared_variations_keep_local_exclusions(self):
         source = '''
             static final ItemRequirement ACTIVE_BOW = any("active bow",

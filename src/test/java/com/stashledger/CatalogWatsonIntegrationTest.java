@@ -37,6 +37,8 @@ public class CatalogWatsonIntegrationTest
             catalog.getWatsonAliases(StashTier.ELITE).get("warriors guild bank"));
         assertEquals("WARRIORS_GUILD_BANK_29047",
             catalog.getWatsonAliases(StashTier.MASTER).get("warriors guild bank"));
+        assertEquals("PANDEMONIUM_BAR",
+            catalog.getWatsonAliases(StashTier.EASY).get("the bar on the pandemonium"));
         for (StashTier tier : StashTier.values())
         {
             aliases.put(tier, catalog.getWatsonAliases(tier));
@@ -98,6 +100,7 @@ public class CatalogWatsonIntegrationTest
         Optional<Map<String, Boolean>> result = WatsonBoardParser.parse(board, aliases(catalog), catalog.getDefinitions());
         assertTrue("Every pinned Watson board label must parse", result.isPresent());
         assertEquals(expected, result.get());
+        assertTrue("The live Pandemonium Easy row must retain its filled state", result.get().get("PANDEMONIUM_BAR"));
     }
 
     private static Map<StashTier, Map<String, String>> aliases(StashCatalog catalog)

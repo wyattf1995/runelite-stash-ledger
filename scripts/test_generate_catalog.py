@@ -109,6 +109,25 @@ class GenerateCatalogTest(unittest.TestCase):
                 self.assertEqual("the bar on the pandemonium", aliases["PANDEMONIUM_BAR"])
                 self.assertEqual("unrelated bar", aliases["UNRELATED_BAR"])
 
+    def test_watson_alias_for_wintumber_uses_the_live_noticeboard_label(self):
+        constructors = (
+            ("wrapper", 'WINTUMBER_ISLAND("Wintumber Island", STASHUnit.WINTUMBER_ISLAND, Type.Crate),'),
+            ("explicit", 'WINTUMBER_ISLAND("Wintumber Island", "Stale explicit label", '
+                         'STASHUnit.WINTUMBER_ISLAND, Type.Crate),'),
+        )
+        for constructor, wintumber in constructors:
+            with self.subTest(constructor=constructor):
+                source = '''
+                    %s
+                    UNRELATED_BAR("Unrelated bar", STASHUnit.UNRELATED_BAR, Type.Crate);
+                ''' % wintumber
+
+                aliases = generate_catalog.parse_watson_aliases(
+                    source, ["WINTUMBER_ISLAND", "UNRELATED_BAR"])
+
+                self.assertEqual("on wintumber island", aliases["WINTUMBER_ISLAND"])
+                self.assertEqual("unrelated bar", aliases["UNRELATED_BAR"])
+
     def test_source_declared_variations_keep_local_exclusions(self):
         source = '''
             static final ItemRequirement ACTIVE_BOW = any("active bow",

@@ -70,7 +70,7 @@ The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
 ```sh
-java -ea -jar build/libs/stash-ledger-0.1.4-all.jar --developer-mode --debug
+java -ea -jar build/libs/stash-ledger-0.1.5-all.jar --developer-mode --debug
 ```
 
 On macOS, the development launcher also needs this JVM option:
@@ -99,9 +99,9 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-Version `0.1.3` is available in RuneLite's Plugin Hub, including configurable
+Version `0.1.4` is available in RuneLite's Plugin Hub, including configurable
 clue-tier dots, all-tier hover details and clearer noticeboard diagnostics.
-The [update submission](https://github.com/runelite/plugin-hub/pull/20606) merged on
+The [update submission](https://github.com/runelite/plugin-hub/pull/20637) merged on
 2026-11-13 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
 plugin were verified against the reviewed source. Install or update STASH Ledger
 through RuneLite's Plugin Hub.
@@ -137,11 +137,21 @@ See [validation evidence](docs/validation.md). The broader
 [hardening roadmap](docs/hardening-plan.md) remains a separate proposal.
 
 
-### Version 0.1.4 noticeboard correction (publication pending)
+### Version 0.1.4 noticeboard correction
 
 Watson displays the Easy STASH as “The bar on the Pandemonium.” Version 0.1.4
 corrects its previously mismatched “Pandemonium bar” catalog alias. All 119 units,
 saved progress, item requirements and complete-board safeguards are preserved.
 The exact live label is covered by the full-board fixture and generator tests.
 Validation passed 114 Java tests, eight Python tests and 53 source-only proofs.
-Successful live contents sync still needs confirmation after publication.
+Official distribution was verified on 2026-11-13. Successful live contents sync
+still needs confirmation.
+
+### Version 0.1.5 island noticeboard corrections (publication pending)
+
+Live evidence identifies two more label differences: Elite “On Wintumber Island”
+and Master “On Brittle Isle.” Version 0.1.5 corrects both aliases while preserving
+unit identities, saved progress and complete-board safeguards. Validation passed
+114 Java tests, ten Python tests and 57 source-only regression proofs. Successful
+live contents sync remains unverified; this patch corrects the two observed
+labels without accepting an incomplete board.

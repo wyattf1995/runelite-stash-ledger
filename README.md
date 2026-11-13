@@ -99,10 +99,10 @@ The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
 
-Version `0.1.2` is available in RuneLite's Plugin Hub, including the corrected
-Watson location aliases, item outlines, hover details and selected-STASH fill mode.
-The [update submission](https://github.com/runelite/plugin-hub/pull/20592) merged on
-2026-11-12 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
+Version `0.1.3` is available in RuneLite's Plugin Hub, including configurable
+clue-tier dots, all-tier hover details and clearer noticeboard diagnostics.
+The [update submission](https://github.com/runelite/plugin-hub/pull/20606) merged on
+2026-11-13 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
 plugin were verified against the reviewed source. Install or update STASH Ledger
 through RuneLite's Plugin Hub.
 
@@ -118,7 +118,7 @@ continued matching failure after updating. Successful live sync is not yet
 verified; version 0.1.3 adds diagnostics for the remaining mismatch.
 See [validation evidence](docs/validation.md).
 
-### Version 0.1.3 update (publication pending)
+### Version 0.1.3 update
 
 Version 0.1.3 adds a configurable color for each clue tier and a
 single-color mode under **Dot colors**. With **Item highlight style → Dot**, an
@@ -131,7 +131,7 @@ reports the failing tier and reason when a complete scan is rejected. Line break
 are a confirmed normalization gap, not yet the confirmed cause of the live error.
 
 The exact candidate passed 114 Java tests, seven Python tests and 51 source-only
-regression proofs. Live bank and noticeboard checks remain pending and will be
-performed after publication. This is not yet a distributed Plugin Hub update.
+regression proofs. Official Plugin Hub distribution is verified. Live bank and
+noticeboard checks remain pending; publication does not establish live sync success.
 See [validation evidence](docs/validation.md). The broader
 [hardening roadmap](docs/hardening-plan.md) remains a separate proposal.

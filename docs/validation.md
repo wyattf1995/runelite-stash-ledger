@@ -39,6 +39,27 @@ and perform those checks on the live release. The noticeboard changes improve
 normalization and diagnostics; they are not a claim that the reported live error
 has been resolved. No gameplay automation or saved-data migration was added.
 
+## Official 0.1.3 distribution
+
+[Plugin Hub PR 20606](https://github.com/runelite/plugin-hub/pull/20606) merged
+at 2026-11-13 05:42:20 UTC as
+`70bdc919cde5083d0880cd72707a09d9da78d571`, retaining source pin
+`2d88b61d5229fde626bc0ce7a9fed00f1b929516`. The
+[production build and upload](https://github.com/runelite/plugin-hub/actions/runs/43373757366)
+passed; the upload step completed at 05:43:16 UTC.
+
+At 06:16 UTC, the signed official RuneLite 1.13.6 manifest listed version 0.1.3.
+Its RSA/SHA-256 signature and the downloaded 116,917-byte JAR hash were verified
+and matched the production CI manifest diff:
+
+```text
+0abac3b2564a0c1b17e6d52fa5dfc694af7293acb4e0b5ba02c25a35aa1c0597  published JAR
+```
+
+The accepted source and reviewed Hub artifact remain the release identity;
+this documentation update does not change executable inputs. Live bank and
+noticeboard checks remain deferred to the maintainer's post-release testing.
+
 ---
 
 # Version 0.1.2 Watson noticeboard correction

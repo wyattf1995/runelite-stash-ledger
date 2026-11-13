@@ -1,3 +1,38 @@
+# Version 0.1.4 Pandemonium noticeboard correction
+
+A live Watson Easy-tab screenshot on 2026-11-13 identified the exact remaining
+mismatch: `The bar on the Pandemonium`. The catalog already contained the unit,
+items and coordinates, but the reference wrapper supplied `pandemonium bar`.
+This patch corrects the generator and its generated alias, using the literal
+live label in the independent 119-row board fixture. The parser and saved-state
+keys are unchanged; unmatched boards still leave saved contents untouched.
+
+Validated source: `e9708c8cbc68ec5e438c559e482712fe7e85b12a`, on the guarded NAS
+worker against the unchanged RuneLite 1.13.6 pin. Documentation-only follow-up
+and merge history do not change executable, test or build inputs.
+
+- 114 Java and eight Python tests passed; zero failed, errored or skipped Java tests.
+- 50 Java and three Python named source-only proofs went red, restored exact
+  committed source bytes, and went green. The full suite passed again afterward.
+- Both JARs, Java 11 bytecode, packaged metadata/notices and headless launcher help passed.
+- Independent verification checked source identity, hashes, proof logs, JUnit
+  reports and separate source/test commits. Compared with 0.1.3, the thin JAR
+  changes only `GeneratedStashDefinitions.class` and version metadata; all other
+  STASH Ledger classes are byte-identical.
+- Fleet ticket `vps-e18d9f8032ab468fb304883bdcfb1242` completed verified artifact
+  export and closeout. Evidence is retained in the Pandemonium release record.
+
+```text
+194a16fc704551d0d048ed27eb866ff60bd6a80f258568143184b9d63cb41fc1  stash-ledger-0.1.4.jar
+3813cb752ee910083f298acb1a08452bfde42d2c67530c05a35483a5e6b8c9a2  stash-ledger-0.1.4-all.jar
+```
+
+Official 0.1.4 distribution is pending. The exact reported label mismatch has a
+verified regression fix; successful live contents sync remains unverified.
+Post-release live checks are explicitly deferred by the maintainer.
+
+---
+
 # Version 0.1.3 validation
 
 Validated on the guarded NAS Linux worker on 2026-11-12 against RuneLite 1.13.6.

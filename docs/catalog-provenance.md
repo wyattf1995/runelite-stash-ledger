@@ -35,6 +35,23 @@ uses the installed RuneLite `STASHUnit` enum for object IDs and world points, so
 an incompatible client fails at catalog construction instead of silently using
 stale object IDs.
 
+## Verified noticeboard corrections
+
+The pinned wrapper is a reference, not an authoritative copy of the live game
+labels. On 2026-11-13, a live Watson Easy-tab screenshot showed **The bar on the
+Pandemonium** for the existing `PANDEMONIUM_BAR` unit; the wrapper derives
+`pandemonium bar` instead. `WATSON_LOCATION_OVERRIDES` in the generator records
+the exact observed label before normalization. Regeneration therefore preserves
+this correction without editing generated Java by hand. The independent board
+fixture uses the literal observed text. No unit, object ID, coordinates, item
+requirements, or saved-state keys changed, and the catalog still has 119 units.
+
+The retained screenshot and SHA-256 receipt are in
+`reports/runelite-stash-pandemonium-20261113/live-evidence.json` in the release
+evidence store. Only labels supported by live or authoritative source evidence
+belong in the override table. An unknown row still rejects the entire contents
+scan; this correction does not permit partial writes or approximate matching.
+
 `GeneratedStashItemRequirements.java` is extracted from RuneLite 1.13.6's
 `EmoteClue.java`. It resolves reusable requirement expressions and retains the
 source's inclusive item ranges. It never looks up an item ID from a display

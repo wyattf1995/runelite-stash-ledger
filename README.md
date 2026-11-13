@@ -70,7 +70,7 @@ The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
 ```sh
-java -ea -jar build/libs/stash-ledger-0.1.3-all.jar --developer-mode --debug
+java -ea -jar build/libs/stash-ledger-0.1.4-all.jar --developer-mode --debug
 ```
 
 On macOS, the development launcher also needs this JVM option:
@@ -135,3 +135,13 @@ regression proofs. Official Plugin Hub distribution is verified. Live bank and
 noticeboard checks remain pending; publication does not establish live sync success.
 See [validation evidence](docs/validation.md). The broader
 [hardening roadmap](docs/hardening-plan.md) remains a separate proposal.
+
+
+### Version 0.1.4 noticeboard correction (publication pending)
+
+Watson displays the Easy STASH as “The bar on the Pandemonium.” Version 0.1.4
+corrects its previously mismatched “Pandemonium bar” catalog alias. All 119 units,
+saved progress, item requirements and complete-board safeguards are preserved.
+The exact live label is covered by the full-board fixture and generator tests.
+Validation passed 114 Java tests, eight Python tests and 53 source-only proofs.
+Successful live contents sync still needs confirmation after publication.

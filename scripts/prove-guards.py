@@ -15,6 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/validation'
 OUT.mkdir(parents=True, exist_ok=True)
 PROOFS = [
+    ('watson-pandemonium-live-label', 'src/main/java/com/stashledger/data/GeneratedStashDefinitions.java',
+     '.put("the bar on the pandemonium", "PANDEMONIUM_BAR")', '.put("pandemonium bar", "PANDEMONIUM_BAR")',
+     'com.stashledger.CatalogWatsonIntegrationTest', 'parsesAll119AgainstPinnedNoticeboardLabelFixture'),
     ('watson-line-breaks', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'value.replaceAll("(?i)<br\\\\s*/?>", " ")', 'value', 'com.stashledger.tracking.WatsonBoardParserTest', 'normalizesKnownLineBreakMarkupWithoutJoiningLocationWords'),
     ('watson-no-partial-commit', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'return failure(tierValues.failure, tier, tierValues.diagnostic);', 'return new Result(Failure.NONE, null, "source-only incomplete proof", Collections.unmodifiableMap(parsed));', 'com.stashledger.StashLedgerPluginTest', 'unmatchedNoticeboardRowCannotPartiallyReplaceSavedContents'),
     ('watson-bounded-diagnostic', 'src/main/java/com/stashledger/tracking/WatsonBoardParser.java', 'bounded(row.location)', 'row.location', 'com.stashledger.tracking.WatsonBoardParserTest', 'detailedUnknownDiagnosticIsSanitizedAndBounded'),

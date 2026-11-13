@@ -5,6 +5,10 @@
 # The three-argument constructor uses the wrapper enum identifier; four-argument
 # entries use their explicit board-label argument. Warriors' Guild bank is the
 # upstream difficulty-scoped exception for both IDs.
+# PANDEMONIUM_BAR is a live-board correction: on 2026-11-13 Watson displayed
+# "The bar on the Pandemonium", replacing the stale wrapper-derived
+# "pandemonium bar". Evidence: reports/runelite-stash-pandemonium-20261113/
+# live-evidence.json and live-easy-noticeboard.png.
 # id	tier	Watson board label
 NEAR_A_SHED_IN_LUMBRIDGE_SWAMP	EASY	near a shed in lumbridge swamp
 ON_THE_BRIDGE_TO_THE_MISTHALIN_WIZARDS_TOWER	EASY	on the bridge to the misthalin wizards tower
@@ -111,7 +115,7 @@ NORTHWESTERN_CORNER_OF_THE_ENCHANTED_VALLEY	MASTER	northwestern corner of the en
 NORTH_OF_MOUNT_KARUULM	MEDIUM	north of mount karuulm
 TWILIGHT_TEMPLE_MINE	MEDIUM	north of the twilight temple
 OUTSIDE_TWILIGHT_TEMPLE	HARD	twilight temple
-PANDEMONIUM_BAR	EASY	pandemonium bar
+PANDEMONIUM_BAR	EASY	The bar on the Pandemonium
 WINTUMBER_ISLAND	ELITE	wintumber island
 BRITTLE_ISLE	MASTER	brittle isle
 WESTERN_SALVAGER_OVERLOOK	MASTER	West side of Salvager Overlook

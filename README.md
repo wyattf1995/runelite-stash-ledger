@@ -4,6 +4,15 @@ STASH Ledger is a compact RuneLite sidebar for planning every STASH unit. It
 keeps construction progress and confirmed contents separate, so an unavailable
 scan never becomes a false “empty” result.
 
+## Install in RuneLite
+
+Open RuneLite’s **Plugin Hub**, search for **STASH Ledger**, and select
+**Install**. Click the gold crate in the sidebar to open the plugin.
+
+Version **0.1.5** is available through the Plugin Hub. It corrects the
+Wintumber Island and Brittle Isle labels on Watson’s noticeboard.
+[Release verification](docs/validation.md#version-015-island-noticeboard-corrections).
+
 ![STASH Ledger sidebar preview](docs/sidebar-preview.png)
 
 The preview uses a small demo account, not live player progress.
@@ -47,15 +56,12 @@ Open Watson's noticeboard to reconcile contents you changed outside this client.
 
 ## Using the sidebar
 
-1. Open RuneLite's **Plugin Hub**, search for **STASH Ledger**, and install it.
-   Select the gold crate on the sidebar. The development client already includes
-   the plugin and enables it by default.
-2. Log in and select **Refresh** to scan construction for the current account.
-3. Open Watson's noticeboard in game to sync filled/empty contents across units.
+1. Log in and select **Refresh** to scan construction for the current account.
+2. Open Watson's noticeboard in game to sync filled/empty contents across units.
    Later confirmed STASH interactions update individual units automatically.
-4. Expand a card for materials and clue items. Use **My list** to focus on pinned
+3. Expand a card for materials and clue items. Use **My list** to focus on pinned
    units, or **Hide filled** to work through unfinished storage.
-5. For a built unit confirmed empty, select **Fill this STASH**, open your bank,
+4. For a built unit confirmed empty, select **Fill this STASH**, open your bank,
    and gather its highlighted items. Hover an item to check the destination.
    The selection guides you; it does not withdraw items or change contents.
    Complete the deposit yourself. If item highlighting is disabled, enable
@@ -66,6 +72,7 @@ unit is empty. Filled/empty is tracked per unit, not per individual stored item.
 
 ## Development
 
+The development client already includes STASH Ledger and enables it by default.
 The project targets Java 11 bytecode and pins RuneLite `1.13.6`. A development
 launcher is available in the `-all.jar` artifact:
 
@@ -98,13 +105,6 @@ for the tested commit and remaining live checks.
 The catalog retains exact source clue wording, alternatives, and restrictions;
 it does not guess interchangeable items. See [catalog provenance](docs/catalog-provenance.md),
 [third-party notices](THIRD_PARTY_NOTICES), and [license](LICENSE).
-
-Version `0.1.4` is available in RuneLite's Plugin Hub, including configurable
-clue-tier dots, all-tier hover details and clearer noticeboard diagnostics.
-The [update submission](https://github.com/runelite/plugin-hub/pull/20637) merged on
-2026-11-13 UTC. The official signed RuneLite 1.13.6 manifest and downloadable
-plugin were verified against the reviewed source. Install or update STASH Ledger
-through RuneLite's Plugin Hub.
 
 The [initial 0.1.0 submission](https://github.com/runelite/plugin-hub/pull/20516)
 is retained in the validation history.
@@ -144,10 +144,11 @@ corrects its previously mismatched “Pandemonium bar” catalog alias. All 119 
 saved progress, item requirements and complete-board safeguards are preserved.
 The exact live label is covered by the full-board fixture and generator tests.
 Validation passed 114 Java tests, eight Python tests and 53 source-only proofs.
-Official distribution was verified on 2026-11-13. Successful live contents sync
-still needs confirmation.
+The [0.1.4 Hub update](https://github.com/runelite/plugin-hub/pull/20637)
+merged on 2026-11-13 and its distribution was verified that day. Successful
+live contents sync still needs confirmation.
 
-### Version 0.1.5 island noticeboard corrections (publication pending)
+### Version 0.1.5 island noticeboard corrections
 
 Live evidence identifies two more label differences: Elite “On Wintumber Island”
 and Master “On Brittle Isle.” Version 0.1.5 corrects both aliases while preserving

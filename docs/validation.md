@@ -27,8 +27,18 @@ and merge history do not change executable, test or build inputs.
 8431f823c6d11d42be9510d2287d9814e25bc2a433e4ea7ce39fd8575b9d8f37  stash-ledger-0.1.5-all.jar
 ```
 
-Official 0.1.5 distribution is pending. Successful live contents synchronization
-remains unverified and is explicitly deferred to post-publication testing.
+RuneLite merged the [0.1.5 submission](https://github.com/runelite/plugin-hub/pull/20647)
+on November 13, 2026. The [accepted plugin entry](https://github.com/runelite/plugin-hub/blob/d2e75eec1602493ef5162b260b98429df09cc600/plugins/stash-ledger)
+pins source `eba4af4f9307e3d9d977c38ce8fc747069939813`, and the
+[production build and upload](https://github.com/runelite/plugin-hub/actions/runs/43529162572) succeeded.
+
+On November 24, 2026 (UTC), signature checks on RuneLite’s
+[1.13.6 manifest](https://repo.runelite.net/plugins/manifest/1.13.6_full.js) and
+[1.13.8 manifest](https://repo.runelite.net/plugins/manifest/1.13.8_full.js)
+confirmed that both distribute STASH Ledger 0.1.5. The downloaded Hub JAR was
+116,922 bytes. Its SHA-256 digest matched the value in both manifests,
+`3c5453a43bf090f93b76a1d90992d125ec0ca27feba5c18e5ad8013b8df74f25`.
+Successful in-game contents synchronization from Watson’s noticeboard remains unverified.
 
 ---
 
